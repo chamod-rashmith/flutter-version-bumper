@@ -50,4 +50,40 @@ void main() {
     final content = pubspecFile.readAsStringSync();
     expect(content, contains('version: 3.5.2+2'));
   });
+
+  test('version without build number', () {
+    pubspecFile.writeAsStringSync('name: no_build_test\nversion: 1.2.3\n');
+    bumpVersion([]);
+    final content = pubspecFile.readAsStringSync();
+    expect(content, contains('version: 1.2.4+1'));
+  });
+
+  test('version with extra spacing', () {
+    pubspecFile.writeAsStringSync('name: spacing_test\nversion:   2.3.4+5 \n');
+    bumpVersion([]);
+    final content = pubspecFile.readAsStringSync();
+    expect(content, contains('version: 2.3.5+6'));
+  });
+
+  test('version in middle of pubspec', () {
+    pubspecFile.writeAsStringSync('name: middle_test\ndescription: "A test project"\nversion: 1.0.0+1\ndependencies:\n  flutter: sdk: flutter\n');
+    bumpVersion(['-b', 'minor']);
+    final content = pubspecFile.readAsStringSync();
+    expect(content, contains('name: middle_test'));
+    expect(content, contains('version: 1.1.0+2'));
+    expect(content, contains('dependencies:'));
+  });
+
+  test('multiple bumps', () {
+    bumpVersion([]); // 1.0.0+1 -> 1.0.1+2
+    bumpVersion(['-b', 'minor']); // 1.0.1+2 -> 1.1.0+3
+    bumpVersion(['-b', 'major']); // 1.1.0+3 -> 2.0.0+4
+    final content = pubspecFile.readAsStringSync();
+    expect(content, contains('version: 2.0.0+4'));
+  });
+
+  test('help flag', () {
+    // Should return without exiting or crashing
+    expect(() => bumpVersion(['--help']), returnsNormally);
+  });
 }

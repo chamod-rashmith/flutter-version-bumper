@@ -4,7 +4,7 @@ import 'package:path/path.dart' as path;
 
 /// The regex pattern used to find the version line in pubspec.yaml.
 /// Matches "version: X.Y.Z+W"
-const String versionRegex = r'^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)';
+const String versionRegex = r'^version:\s*(\d+)\.(\d+)\.(\d+)(?:\+(\d+))?';
 
 /// Processes the command-line arguments and performs the version bump.
 /// 
@@ -38,14 +38,14 @@ void bumpVersion(List<String> arguments) {
   final match = RegExp(versionRegex, multiLine: true).firstMatch(content);
 
   if (match == null) {
-    _printError('Could not parse version line in pubspec.yaml.\nExpected format: version: X.Y.Z+W');
+    _printError('Could not parse version line in pubspec.yaml.\nExpected format: version: X.Y.Z or version: X.Y.Z+W');
     exit(1);
   }
 
   int curMajor = int.parse(match.group(1)!);
   int curMinor = int.parse(match.group(2)!);
   int curPatch = int.parse(match.group(3)!);
-  int curBuild = int.parse(match.group(4)!);
+  int curBuild = match.group(4) != null ? int.parse(match.group(4)!) : 0;
 
   final String oldVersion = '$curMajor.$curMinor.$curPatch+$curBuild';
   print('\x1B[36mCurrent version: $oldVersion\x1B[0m');
