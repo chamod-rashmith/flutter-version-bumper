@@ -163,4 +163,58 @@ void main() {
     expect(decoded['new_version'], equals('1.0.1+2'));
     expect(decoded['dry_run'], isFalse);
   });
+
+  test('transition to new pre-release beta', () {
+    pubspecFile.writeAsStringSync('name: test_project\nversion: 1.0.0+1\n');
+    bumpVersion(['--pre', 'beta']);
+    final content = pubspecFile.readAsStringSync();
+    expect(content, contains('version: 1.0.1-beta.1+2'));
+  });
+
+  test('increment existing pre-release beta', () {
+    pubspecFile.writeAsStringSync('name: test_project\nversion: 1.0.1-beta.1+2\n');
+    bumpVersion(['--pre', 'beta']);
+    final content = pubspecFile.readAsStringSync();
+    expect(content, contains('version: 1.0.1-beta.2+3'));
+  });
+
+  test('change pre-release label from beta to rc', () {
+    pubspecFile.writeAsStringSync('name: test_project\nversion: 1.0.1-beta.2+3\n');
+    bumpVersion(['--pre', 'rc']);
+    final content = pubspecFile.readAsStringSync();
+    expect(content, contains('version: 1.0.1-rc.1+4'));
+  });
+
+  test('stable release promotion (removing pre-release label)', () {
+    pubspecFile.writeAsStringSync('name: test_project\nversion: 1.0.1-beta.2+3\n');
+    bumpVersion([]);
+    final content = pubspecFile.readAsStringSync();
+    expect(content, contains('version: 1.0.2+4'));
+  });
+
+  test('non-numeric pre-release segment fallback', () {
+    pubspecFile.writeAsStringSync('name: test_project\nversion: 1.0.1-beta+2\n');
+    bumpVersion(['--pre', 'beta']);
+    final content = pubspecFile.readAsStringSync();
+    expect(content, contains('version: 1.0.1-beta.1+3'));
+  });
+
+  test('git push option parsing & dry-run simulation output', () {
+    Process.runSync('git', ['init'], workingDirectory: tempDir.path);
+    pubspecFile.writeAsStringSync('name: test_project\nversion: 1.0.0+1\n');
+    final prints = <String>[];
+    final spec = ZoneSpecification(print: (self, parent, zone, line) {
+      prints.add(line);
+    });
+
+    Zone.current.fork(specification: spec).run(() {
+      bumpVersion(['--dry-run', '--git-push', '--json']);
+    });
+
+    expect(prints.length, equals(1));
+    final decoded = jsonDecode(prints.first);
+    expect(decoded['success'], isTrue);
+    expect(decoded['git_pushed'], isTrue);
+    expect(decoded['dry_run'], isTrue);
+  });
 }

@@ -68,31 +68,81 @@ class PubspecVersion {
     required bool incrementBuild,
     int? explicitBuild,
     required bool removeBuild,
+    String? preReleaseLabel,
   }) {
     int newMajor = major;
     int newMinor = minor;
     int newPatch = patch;
     String? newPre = preRelease;
 
-    switch (bumpType) {
-      case 'major':
-        newMajor++;
-        newMinor = 0;
-        newPatch = 0;
-        newPre = null; // Clear pre-release on major bump
-        break;
-      case 'minor':
-        newMinor++;
-        newPatch = 0;
-        newPre = null; // Clear pre-release on minor bump
-        break;
-      case 'patch':
-        newPatch++;
-        newPre = null; // Clear pre-release on patch bump
-        break;
-      case 'build':
-        // Standard semver parts remain the same, only the build is bumped
-        break;
+    if (preReleaseLabel != null) {
+      if (preRelease != null) {
+        final parts = preRelease!.split('.');
+        final existingLabel = parts[0];
+        if (existingLabel == preReleaseLabel) {
+          if (bumpType == 'major') {
+            newMajor++;
+            newMinor = 0;
+            newPatch = 0;
+            newPre = '$preReleaseLabel.1';
+          } else if (bumpType == 'minor') {
+            newMinor++;
+            newPatch = 0;
+            newPre = '$preReleaseLabel.1';
+          } else {
+            // Keep major, minor, patch same, bump pre-release suffix
+            int existingNum = 0;
+            if (parts.length > 1) {
+              existingNum = int.tryParse(parts[1]) ?? 0;
+            }
+            newPre = '$preReleaseLabel.${existingNum + 1}';
+          }
+        } else {
+          // Label changed (e.g. beta -> rc). Keep version same, start new pre-release sequence
+          newPre = '$preReleaseLabel.1';
+        }
+      } else {
+        // No pre-release currently. Bump standard segment, and set pre-release to label.1
+        switch (bumpType) {
+          case 'major':
+            newMajor++;
+            newMinor = 0;
+            newPatch = 0;
+            break;
+          case 'minor':
+            newMinor++;
+            newPatch = 0;
+            break;
+          case 'patch':
+            newPatch++;
+            break;
+          case 'build':
+            break;
+        }
+        newPre = '$preReleaseLabel.1';
+      }
+    } else {
+      // Standard bump (original logic)
+      switch (bumpType) {
+        case 'major':
+          newMajor++;
+          newMinor = 0;
+          newPatch = 0;
+          newPre = null; // Clear pre-release on major bump
+          break;
+        case 'minor':
+          newMinor++;
+          newPatch = 0;
+          newPre = null; // Clear pre-release on minor bump
+          break;
+        case 'patch':
+          newPatch++;
+          newPre = null; // Clear pre-release on patch bump
+          break;
+        case 'build':
+          // Standard semver parts remain the same, only the build is bumped
+          break;
+      }
     }
 
     String? newBuildStr;
@@ -158,6 +208,9 @@ void bumpVersion(List<String> arguments) {
         abbr: 't',
         negatable: false,
         help: 'Automatically create a git tag for the new version')
+    ..addFlag('git-push',
+        negatable: false,
+        help: 'Automatically push committed changes and tags to git remote origin')
     ..addOption('commit-msg',
         abbr: 'm',
         defaultsTo: 'chore: bump version to {version}',
@@ -165,6 +218,8 @@ void bumpVersion(List<String> arguments) {
     ..addOption('tag-prefix',
         defaultsTo: 'v',
         help: 'Git tag prefix')
+    ..addOption('pre',
+        help: 'Specify pre-release label and transition to/increment prerelease (e.g. beta, rc)')
     ..addFlag('dry-run',
         abbr: 'd',
         negatable: false,
@@ -208,10 +263,12 @@ void bumpVersion(List<String> arguments) {
   final removeBuild = argResults['no-build'] as bool;
   final runGit = argResults['git'] as bool;
   final runGitTag = argResults['git-tag'] as bool;
+  final runGitPush = argResults['git-push'] as bool;
   final commitMsg = argResults['commit-msg'] as String;
   final tagPrefix = argResults['tag-prefix'] as String;
   final customPath = argResults['path'] as String?;
   final interactive = argResults['interactive'] as bool;
+  final preReleaseLabel = argResults['pre'] as String?;
 
   int? explicitBuild;
   if (argResults['build-number'] != null) {
@@ -302,6 +359,7 @@ void bumpVersion(List<String> arguments) {
         incrementBuild: !keepBuild,
         explicitBuild: explicitBuild,
         removeBuild: removeBuild,
+        preReleaseLabel: preReleaseLabel,
       );
     }
   }
@@ -327,13 +385,16 @@ void bumpVersion(List<String> arguments) {
   // Handle Git integration
   bool gitCommitted = false;
   bool gitTagged = false;
+  bool gitPushed = false;
 
-  if (runGit || runGitTag) {
+  if (runGit || runGitTag || runGitPush) {
+    final finalRunGit = runGit || runGitPush;
     final result = _runGitAutomation(
       pubspecPath: pubspecFile.path,
       version: newFullStr,
-      doCommit: runGit,
+      doCommit: finalRunGit,
       doTag: runGitTag,
+      doPush: runGitPush,
       commitMsgTemplate: commitMsg,
       tagPrefix: tagPrefix,
       dryRun: dryRun,
@@ -342,6 +403,7 @@ void bumpVersion(List<String> arguments) {
     );
     gitCommitted = result['committed'] ?? false;
     gitTagged = result['tagged'] ?? false;
+    gitPushed = result['pushed'] ?? false;
   }
 
   if (jsonMode) {
@@ -353,6 +415,7 @@ void bumpVersion(List<String> arguments) {
       'dry_run': dryRun,
       'git_committed': gitCommitted,
       'git_tagged': gitTagged,
+      'git_pushed': gitPushed,
     };
     print(json.encode(jsonResult));
   }
@@ -370,12 +433,13 @@ File _resolvePubspecFile(String? customPath) {
   return File(customPath);
 }
 
-/// Runs standard Git commit and tagging commands.
+/// Runs standard Git commit, tagging, and push commands.
 Map<String, bool> _runGitAutomation({
   required String pubspecPath,
   required String version,
   required bool doCommit,
   required bool doTag,
+  required bool doPush,
   required String commitMsgTemplate,
   required String tagPrefix,
   required bool dryRun,
@@ -385,7 +449,7 @@ Map<String, bool> _runGitAutomation({
   final dir = path.dirname(pubspecPath);
   if (!_isGitRepository(dir)) {
     _logWarning('Not a Git repository. Skipping Git integrations.', quiet, jsonMode);
-    return {'committed': false, 'tagged': false};
+    return {'committed': false, 'tagged': false, 'pushed': false};
   }
 
   final commitMsg = commitMsgTemplate.replaceAll('{version}', version);
@@ -399,23 +463,30 @@ Map<String, bool> _runGitAutomation({
     if (doTag) {
       _logInfo('[Dry Run] Would run: git tag -a $tagName -m "Release $version"', quiet, jsonMode, colorCode: '\x1B[33m');
     }
-    return {'committed': doCommit, 'tagged': doTag};
+    if (doPush) {
+      _logInfo('[Dry Run] Would run: git push origin HEAD', quiet, jsonMode, colorCode: '\x1B[33m');
+      if (doTag) {
+        _logInfo('[Dry Run] Would run: git push origin $tagName', quiet, jsonMode, colorCode: '\x1B[33m');
+      }
+    }
+    return {'committed': doCommit, 'tagged': doTag, 'pushed': doPush};
   }
 
   bool committed = false;
   bool tagged = false;
+  bool pushed = false;
 
   if (doCommit) {
     final addRes = Process.runSync('git', ['add', path.basename(pubspecPath)], workingDirectory: dir);
     if (addRes.exitCode != 0) {
       _logWarning('git add failed: ${addRes.stderr}', quiet, jsonMode);
-      return {'committed': false, 'tagged': false};
+      return {'committed': false, 'tagged': false, 'pushed': false};
     }
 
     final commitRes = Process.runSync('git', ['commit', '-m', commitMsg], workingDirectory: dir);
     if (commitRes.exitCode != 0) {
       _logWarning('git commit failed: ${commitRes.stderr}', quiet, jsonMode);
-      return {'committed': false, 'tagged': false};
+      return {'committed': false, 'tagged': false, 'pushed': false};
     }
     committed = true;
     _logInfo('[Git] Committed change: "$commitMsg"', quiet, jsonMode, colorCode: '\x1B[32m');
@@ -431,7 +502,27 @@ Map<String, bool> _runGitAutomation({
     }
   }
 
-  return {'committed': committed, 'tagged': tagged};
+  if (doPush) {
+    _logInfo('[Git] Pushing changes to remote origin...', quiet, jsonMode, colorCode: '\x1B[36m');
+    final pushRes = Process.runSync('git', ['push', 'origin', 'HEAD'], workingDirectory: dir);
+    if (pushRes.exitCode != 0) {
+      _logWarning('git push origin HEAD failed: ${pushRes.stderr}', quiet, jsonMode);
+    } else {
+      pushed = true;
+      _logInfo('[Git] Pushed changes to remote origin (HEAD)', quiet, jsonMode, colorCode: '\x1B[32m');
+    }
+
+    if (doTag && tagged) {
+      final pushTagRes = Process.runSync('git', ['push', 'origin', tagName], workingDirectory: dir);
+      if (pushTagRes.exitCode != 0) {
+        _logWarning('git push origin $tagName failed: ${pushTagRes.stderr}', quiet, jsonMode);
+      } else {
+        _logInfo('[Git] Pushed tag $tagName to remote origin', quiet, jsonMode, colorCode: '\x1B[32m');
+      }
+    }
+  }
+
+  return {'committed': committed, 'tagged': tagged, 'pushed': pushed};
 }
 
 /// Safe Git environment check helper.
@@ -511,7 +602,8 @@ void _printHelp(ArgParser parser) {
   print('  fvb -b minor               # Bumps minor (1.0.1+2 -> 1.1.0+3)');
   print('  fvb -s 2.0.0-beta.1        # Sets version to 2.0.0-beta.1+build');
   print('  fvb --keep-build           # Bumps patch but keeps same build number');
-  print('  fvb -d --git --git-tag     # Simulates bump, git add, git commit & git tag');
+  print('  fvb --pre beta             # Bumps to next beta prerelease (e.g. 1.0.1-beta.1)');
+  print('  fvb -g -t --git-push       # Commits, tags and pushes to Git remote origin');
   print('  fvb -i                     # Runs interactive selection CLI menu');
 }
 

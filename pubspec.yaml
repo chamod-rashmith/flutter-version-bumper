@@ -1,6 +1,6 @@
 name: flutter_version_bumper
 description: A command-line tool to easily bump Flutter project versions using SemVer and build numbers.
-version: 1.1.0
+version: 1.2.0
 repository: https://github.com/chamod-rashmith/flutter-version-bumper
 environment:
   sdk: '>=3.0.0 <4.0.0'

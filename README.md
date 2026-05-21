@@ -65,7 +65,9 @@ fvb -i
 
 #### 📦 Full SemVer & Pre-releases
 FVB supports pre-release suffixes (e.g., `-beta.1`, `-rc.3`) and build metadata:
-- `1.0.0-beta.1+12` -> `fvb` -> `1.0.1+13` (auto-clears pre-release tags upon release bump)
+- **Start or Bump Pre-release**: `fvb --pre beta` starts or increments a `beta` prerelease track (e.g. `1.0.0` -> `1.0.1-beta.1+2` -> `1.0.1-beta.2+3`).
+- **Transition Pre-release Labels**: `fvb --pre rc` transitions the prerelease track (e.g. `1.0.1-beta.2+3` -> `1.0.1-rc.1+4`).
+- **Stable Promotion**: Promotes to stable track by running the standard bump command without the `--pre` flag (e.g., `1.0.1-rc.1+4` -> `1.0.2+5`).
 
 #### 🔢 Build Number Controls
 - **Keep Build Number**: `fvb --keep-build` (or `-k`) keeps the build number unchanged.
@@ -73,10 +75,13 @@ FVB supports pre-release suffixes (e.g., `-beta.1`, `-rc.3`) and build metadata:
 - **Remove Build Number**: `fvb --no-build` strips the build number entirely (e.g., `1.0.0`).
 
 #### 🐙 Git Automation
-- Automatically commit `pubspec.yaml` changes: `fvb -g`
-- Automatically commit and tag: `fvb -g -t`
-- Customize commit message: `fvb -g -m "chore(release): bump version to {version}"`
-- Customize tag prefix: `fvb -g -t --tag-prefix "release-"`
+- **Commit changes**: `fvb -g` (automatically stages and commits the `pubspec.yaml` update).
+- **Commit and tag**: `fvb -g -t` (creates a Git tag for the new version).
+- **Commit, tag, and push**: `fvb --git-push` (stages, commits, and pushes changes to the remote origin tracking branch).
+  > [!NOTE]
+  > Specifying `--git-push` automatically enables `--git` (commit) under the hood. To push tags as well, combine it with the tagging flag: `fvb -t --git-push`.
+- **Customize commit message**: `fvb -g -m "chore(release): bump version to {version}"`
+- **Customize tag prefix**: `fvb -t --tag-prefix "release-"`
 
 #### 🧪 Dry-Run Simulation
 - Simulate the bump to preview outputs and git commands without modifying any files: `fvb -d`
@@ -104,8 +109,10 @@ fvb --help
 - `--no-build`: Completely removes the build number segment.
 - `-g, --git`: Automatically commits the `pubspec.yaml` change.
 - `-t, --git-tag`: Automatically creates a Git tag for the new version.
+- `--git-push`: Automatically pushes committed changes and tags to the remote origin tracking branch.
 - `-m, --commit-msg`: Commit message template (uses `{version}` as placeholder).
 - `--tag-prefix`: Custom Git tag prefix (defaults to `v`).
+- `--pre`: Specify pre-release label and transition to/increment prerelease track (e.g. beta, rc).
 - `-d, --dry-run`: Simulates version bumps and prints the outcomes.
 - `-p, --path`: Path to the custom `pubspec.yaml` directory or file.
 - `-i, --interactive`: Launches a step-by-step interactive CLI interface.
@@ -117,7 +124,7 @@ fvb --help
 
 ## 🤖 CI/CD Integration
 
-FVB is perfect for automated builds. Here’s an example of how to use it in a **GitHub Action** to automatically bump the version on every merge to `main`:
+FVB is perfect for automated builds. You can fully automate version bumping, committing, tagging, and pushing within your CI/CD pipelines in a single command. Here is a **GitHub Action** example:
 
 ```yaml
 jobs:
@@ -125,21 +132,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.PAT_TOKEN }} # Needed to push back to repository
+          
       - uses: dart-lang/setup-dart@v1
       
       - name: Install FVB
         run: dart pub global activate --source git https://github.com/chamod-rashmith/flutter-version-bumper
         
-      - name: Bump Version
-        run: fvb  # Bumps patch + build number
-        
-      - name: Commit and Push
+      - name: Setup Git User
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add pubspec.yaml
-          git commit -m "chore: bump version [skip ci]"
-          git push
+          
+      - name: Bump, Tag, and Push
+        run: fvb -t --git-push # Automates the entire release pipeline
 ```
 
 ---
@@ -167,8 +174,8 @@ This project follows a professional Dart library structure:
 ## 🤝 Contributing
 
 Contributions are welcome! If you have ideas for features like:
-- Git Tagging automations
-- Slack/Discord notification support
+- Auto-incrementing native platform files (e.g. `build.gradle` or Xcode configurations)
+- Slack/Discord release notification support
 - Custom versioning formats
 
 Feel free to open an issue or submit a Pull Request.

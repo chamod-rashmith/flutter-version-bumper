@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-05-21
+
+### Added
+- **Automated Prerelease Bumping (`--pre` / `--prerelease <label>`)**:
+  - Automatically transitions stable versions to prereleases (e.g. `1.0.0` -> `1.0.1-beta.1`).
+  - Increments prerelease suffix counters when bumping the same label (e.g. `1.0.1-beta.1` -> `1.0.1-beta.2`).
+  - Gracefully transitions between different labels (e.g. `beta.2` -> `rc.1`).
+  - Seamlessly promotes to stable version track when running a standard bump without `--pre`.
+- **Git Push Automation (`--git-push`)**:
+  - Push committed files and created tags directly to Git remote origin (`git push origin HEAD` and `git push origin <tagName>`) in one CLI invocation.
+  - Full dry-run (`-d`) simulation reporting support.
+
 ## [1.1.0] - 2026-05-21
 
 ### Added
