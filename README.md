@@ -43,7 +43,7 @@ dart pub global activate --source path .
 
 ## ⚡ Usage Guide
 
-Navigate to the root of your Flutter project (where `pubspec.yaml` is located) and use the `fvb` command.
+Navigate to the root of your Flutter project (where `pubspec.yaml` is located) or specify the path explicitly.
 
 ### **1. Basic Bumping**
 By default, running `fvb` without arguments increments the **patch** version.
@@ -55,22 +55,38 @@ By default, running `fvb` without arguments increments the **patch** version.
 | `fvb -b major` | `1.1.0+3` | `2.0.0+4` | Major increment |
 | `fvb -b build` | `2.0.0+4` | `2.0.0+5` | Only Build increment |
 
-### **2. Explicit Versioning**
-If you need to jump to a specific semantic version while still incrementing the build number:
+### **2. Premium Customizations**
+
+#### 🎮 Interactive Mode
+Run FVB in step-by-step interactive mode:
 ```bash
-fvb --set 2.5.0
+fvb -i
 ```
-*Output: `1.0.0+1` → `2.5.0+2`*
 
-### **3. Terminal Output Example**
-When you run a bump, FVB provides clear, color-coded feedback:
+#### 📦 Full SemVer & Pre-releases
+FVB supports pre-release suffixes (e.g., `-beta.1`, `-rc.3`) and build metadata:
+- `1.0.0-beta.1+12` -> `fvb` -> `1.0.1+13` (auto-clears pre-release tags upon release bump)
 
-```text
-Current version: 1.0.0+1
-New version:     1.1.0+2
+#### 🔢 Build Number Controls
+- **Keep Build Number**: `fvb --keep-build` (or `-k`) keeps the build number unchanged.
+- **Explicit Build Number**: `fvb -n 42` overrides the build number to `42`.
+- **Remove Build Number**: `fvb --no-build` strips the build number entirely (e.g., `1.0.0`).
 
-[OK] pubspec.yaml updated: 1.0.0+1 -> 1.1.0+2
-```
+#### 🐙 Git Automation
+- Automatically commit `pubspec.yaml` changes: `fvb -g`
+- Automatically commit and tag: `fvb -g -t`
+- Customize commit message: `fvb -g -m "chore(release): bump version to {version}"`
+- Customize tag prefix: `fvb -g -t --tag-prefix "release-"`
+
+#### 🧪 Dry-Run Simulation
+- Simulate the bump to preview outputs and git commands without modifying any files: `fvb -d`
+
+#### 📂 Custom Paths & Monorepos
+- Bump version for a specific sub-package or directory: `fvb --path packages/my_feature_app`
+
+#### 🤖 Quiet & JSON (CI/CD Pipelines)
+- Output raw JSON details: `fvb --json`
+- Suppress normal CLI output: `fvb -q`
 
 ---
 
@@ -82,7 +98,19 @@ fvb --help
 ```
 
 - `-b, --bump`: Specifies which SemVer part to increment: `major`, `minor`, `patch` (default), or `build`.
-- `-s, --set`: Explicitly sets the semantic version string (`X.Y.Z`).
+- `-s, --set`: Explicitly sets the full version string (e.g., `2.0.0-beta.1+3`).
+- `-n, --build-number`: Explicitly sets the build number segment.
+- `-k, --keep-build`: Keeps the current build number instead of auto-incrementing.
+- `--no-build`: Completely removes the build number segment.
+- `-g, --git`: Automatically commits the `pubspec.yaml` change.
+- `-t, --git-tag`: Automatically creates a Git tag for the new version.
+- `-m, --commit-msg`: Commit message template (uses `{version}` as placeholder).
+- `--tag-prefix`: Custom Git tag prefix (defaults to `v`).
+- `-d, --dry-run`: Simulates version bumps and prints the outcomes.
+- `-p, --path`: Path to the custom `pubspec.yaml` directory or file.
+- `-i, --interactive`: Launches a step-by-step interactive CLI interface.
+- `-q, --quiet`: Mutes console print statements.
+- `--json`: Formats output as a structured JSON string.
 - `-h, --help`: Displays the help menu.
 
 ---
