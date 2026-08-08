@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.1] - 2026-08-08
+
+### Fixed
+- Improved `--install-hook` and `--remove-hook` argument handling to automatically default to `pre-commit` hook when specified without extra parameters.
+
+### Added
+- Comprehensive CLI option verification test suite (`test/cli_all_options_test.dart`) testing all `fvb -h` parameters and flags.
+
 ## [1.4.0] - 2026-08-08
 
 - Added fvb --install-skill command to automatically deploy AI Agent SKILL.md into local or global agent directories

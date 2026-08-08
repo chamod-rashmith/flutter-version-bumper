@@ -32,9 +32,27 @@ export 'src/utils/file_utils.dart' show versionRegex;
 void bumpVersion(List<String> arguments) {
   final parser = buildArgParser();
 
+  final processedArgs = <String>[];
+  for (var i = 0; i < arguments.length; i++) {
+    final arg = arguments[i];
+    if (arg == '--install-hook') {
+      processedArgs.add(arg);
+      if (i + 1 >= arguments.length || arguments[i + 1].startsWith('-')) {
+        processedArgs.add('pre-commit');
+      }
+    } else if (arg == '--remove-hook') {
+      processedArgs.add(arg);
+      if (i + 1 >= arguments.length || arguments[i + 1].startsWith('-')) {
+        processedArgs.add('pre-commit');
+      }
+    } else {
+      processedArgs.add(arg);
+    }
+  }
+
   ArgResults argResults;
   try {
-    argResults = parser.parse(arguments);
+    argResults = parser.parse(processedArgs);
   } catch (e) {
     printError('Argument parsing error: ${e.toString()}');
     exit(1);
