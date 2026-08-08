@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.3.0] - 2026-08-08
+
+- Added config file support, automated changelog updater, git hooks installer, and modularized codebase into lib/src/
+
 All notable changes to this project will be documented in this file.
 
 ## [1.2.0] - 2026-05-21
