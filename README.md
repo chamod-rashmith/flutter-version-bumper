@@ -13,8 +13,12 @@
 In a standard Flutter development workflow, updating versions manually is error-prone. Developers often forget to increment the build number or accidentally break the YAML structure. **FVB** solves this by:
 
 - **Automating Build Numbers**: Every time you bump a version part (`major`, `minor`, or `patch`), the build number (the number after the `+`) is automatically incremented.
-- **Ensuring Consistency**: It handles the logic of resetting lower-priority version segments (e.g., bumping `minor` resets `patch` to `0`).
-- **Cross-Platform Compatibility**: Being built with Dart, it runs natively on macOS, Windows, and Linux without needing complex environment setups.
+- **Automating Changelogs**: Automatically appends clean release note headers to `CHANGELOG.md`.
+- **Project Configuration Files**: Save team defaults in `.fvb.yaml` or `pubspec.yaml` to avoid repeating long CLI flags.
+- **Git Hooks Automation**: Install pre-commit/pre-push hooks to enforce valid versioning workflows.
+- **Cross-Platform Compatibility**: Built with Dart, running natively on macOS, Windows, and Linux.
+
+---
 
 ## 📋 Prerequisites
 
@@ -55,7 +59,39 @@ By default, running `fvb` without arguments increments the **patch** version.
 | `fvb -b major` | `1.1.0+3` | `2.0.0+4` | Major increment |
 | `fvb -b build` | `2.0.0+4` | `2.0.0+5` | Only Build increment |
 
-### **2. Premium Customizations**
+---
+
+### **2. Features & Customizations**
+
+#### 📝 Automated `CHANGELOG.md` Updates
+Automatically append release notes to `CHANGELOG.md`:
+```bash
+fvb -c --changelog-msg "Fixed login authentication bug"
+```
+
+#### ⚙️ Config File Support (`.fvb.yaml` / `pubspec.yaml`)
+Save team-wide default configurations in `.fvb.yaml` or inside your `pubspec.yaml` under `fvb:`:
+```yaml
+# .fvb.yaml
+fvb:
+  git: true
+  git_tag: true
+  git_push: true
+  tag_prefix: "v"
+  commit_msg: "chore(release): bump version to {version}"
+  changelog: true
+```
+Now, simply running `fvb` will automatically commit, tag, update changelogs, and push!
+
+#### 🪝 Git Hooks Integration
+Install pre-commit hooks to validate pubspec version updates before every commit:
+```bash
+fvb --install-hook pre-commit
+```
+To remove installed hooks:
+```bash
+fvb --remove-hook pre-commit
+```
 
 #### 🎮 Interactive Mode
 Run FVB in step-by-step interactive mode:
@@ -78,8 +114,6 @@ FVB supports pre-release suffixes (e.g., `-beta.1`, `-rc.3`) and build metadata:
 - **Commit changes**: `fvb -g` (automatically stages and commits the `pubspec.yaml` update).
 - **Commit and tag**: `fvb -g -t` (creates a Git tag for the new version).
 - **Commit, tag, and push**: `fvb --git-push` (stages, commits, and pushes changes to the remote origin tracking branch).
-  > [!NOTE]
-  > Specifying `--git-push` automatically enables `--git` (commit) under the hood. To push tags as well, combine it with the tagging flag: `fvb -t --git-push`.
 - **Customize commit message**: `fvb -g -m "chore(release): bump version to {version}"`
 - **Customize tag prefix**: `fvb -t --tag-prefix "release-"`
 
@@ -113,6 +147,11 @@ fvb --help
 - `-m, --commit-msg`: Commit message template (uses `{version}` as placeholder).
 - `--tag-prefix`: Custom Git tag prefix (defaults to `v`).
 - `--pre`: Specify pre-release label and transition to/increment prerelease track (e.g. beta, rc).
+- `-c, --changelog`: Automatically updates `CHANGELOG.md` with a new release header.
+- `--changelog-msg`: Custom message/note for the `CHANGELOG.md` entry.
+- `--config-path`: Custom configuration YAML file path (`.fvb.yaml`).
+- `--install-hook`: Install an executable Git hook (`pre-commit` or `pre-push`).
+- `--remove-hook`: Remove an installed Git hook.
 - `-d, --dry-run`: Simulates version bumps and prints the outcomes.
 - `-p, --path`: Path to the custom `pubspec.yaml` directory or file.
 - `-i, --interactive`: Launches a step-by-step interactive CLI interface.
@@ -134,19 +173,19 @@ jobs:
       - uses: actions/checkout@v3
         with:
           token: ${{ secrets.PAT_TOKEN }} # Needed to push back to repository
-          
+
       - uses: dart-lang/setup-dart@v1
-      
+
       - name: Install FVB
         run: dart pub global activate --source git https://github.com/chamod-rashmith/flutter-version-bumper
-        
+
       - name: Setup Git User
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          
-      - name: Bump, Tag, and Push
-        run: fvb -t --git-push # Automates the entire release pipeline
+
+      - name: Bump, Tag, Update Changelog and Push
+        run: fvb -t -c --git-push # Automates the entire release pipeline
 ```
 
 ---
@@ -163,22 +202,24 @@ jobs:
 
 ## 🏗 Project Structure
 
-This project follows a professional Dart library structure:
-- `bin/`: Contains the executable entry point.
-- `lib/`: Contains the core logic and regex parsing.
-- `LICENSE`: Open-source MIT license.
-- `CHANGELOG.md`: History of all major changes.
+This project follows a clean modular architecture:
+```
+lib/
+├── flutter_version_bumper.dart    # Main library export coordinator
+└── src/
+    ├── changelog/                 # Changelog updater module
+    ├── cli/                       # ArgParser & Interactive runner
+    ├── config/                    # YAML configuration parser (.fvb.yaml / pubspec.yaml)
+    ├── git/                       # Git automation & Git hooks installer
+    ├── models/                    # PubspecVersion SemVer model
+    └── utils/                     # Logger & File utility helpers
+```
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! If you have ideas for features like:
-- Auto-incrementing native platform files (e.g. `build.gradle` or Xcode configurations)
-- Slack/Discord release notification support
-- Custom versioning formats
-
-Feel free to open an issue or submit a Pull Request.
+Contributions are welcome! If you have ideas for features, feel free to open an issue or submit a Pull Request.
 
 ---
 

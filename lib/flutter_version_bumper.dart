@@ -2,14 +2,21 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:path/path.dart' as path;
 
+import 'src/changelog/changelog_updater.dart';
 import 'src/cli/arg_parser.dart';
 import 'src/cli/interactive_runner.dart';
+import 'src/config/fvb_config.dart';
 import 'src/git/git_automation.dart';
+import 'src/git/git_hooks.dart';
 import 'src/models/pubspec_version.dart';
 import 'src/utils/file_utils.dart';
 import 'src/utils/logger.dart';
 
+export 'src/changelog/changelog_updater.dart';
+export 'src/config/fvb_config.dart';
+export 'src/git/git_hooks.dart';
 export 'src/models/pubspec_version.dart';
 export 'src/utils/file_utils.dart' show versionRegex;
 
@@ -33,14 +40,53 @@ void bumpVersion(List<String> arguments) {
   final quiet = argResults['quiet'] as bool;
   final jsonMode = argResults['json'] as bool;
   final dryRun = argResults['dry-run'] as bool;
-  final keepBuild = argResults['keep-build'] as bool;
-  final removeBuild = argResults['no-build'] as bool;
-  final runGit = argResults['git'] as bool;
-  final runGitTag = argResults['git-tag'] as bool;
-  final runGitPush = argResults['git-push'] as bool;
-  final commitMsg = argResults['commit-msg'] as String;
-  final tagPrefix = argResults['tag-prefix'] as String;
   final customPath = argResults['path'] as String?;
+  final configPath = argResults['config-path'] as String?;
+
+  final pubspecFile = resolvePubspecFile(customPath);
+
+  // Handle Git Hook command flags if specified
+  final installHookType = argResults['install-hook'] as String?;
+  if (installHookType != null) {
+    final projectDir = path.dirname(pubspecFile.path);
+    final ok = GitHooksManager.installHook(
+      projectDir: projectDir,
+      hookType: installHookType,
+      quiet: quiet,
+      jsonMode: jsonMode,
+    );
+    if (!ok) exit(1);
+    return;
+  }
+
+  final removeHookType = argResults['remove-hook'] as String?;
+  if (removeHookType != null) {
+    final projectDir = path.dirname(pubspecFile.path);
+    final ok = GitHooksManager.removeHook(
+      projectDir: projectDir,
+      hookType: removeHookType,
+      quiet: quiet,
+      jsonMode: jsonMode,
+    );
+    if (!ok) exit(1);
+    return;
+  }
+
+  // Load configuration from file (.fvb.yaml / pubspec.yaml)
+  final config = FvbConfig.load(configPath: configPath, targetPubspecPath: pubspecFile.path);
+
+  final keepBuild = (argResults['keep-build'] as bool) || (config.keepBuild ?? false);
+  final removeBuild = (argResults['no-build'] as bool) || (config.noBuild ?? false);
+  final runGit = (argResults['git'] as bool) || (config.git ?? false);
+  final runGitTag = (argResults['git-tag'] as bool) || (config.gitTag ?? false);
+  final runGitPush = (argResults['git-push'] as bool) || (config.gitPush ?? false);
+
+  final commitMsg = (argResults['commit-msg'] as String?) ?? config.commitMsg ?? 'chore: bump version to {version}';
+  final tagPrefix = (argResults['tag-prefix'] as String?) ?? config.tagPrefix ?? 'v';
+
+  final runChangelog = (argResults['changelog'] as bool) || (config.changelog ?? false);
+  final changelogMsg = (argResults['changelog-msg'] as String?) ?? config.changelogMsg;
+
   final interactive = argResults['interactive'] as bool;
   final preReleaseLabel = argResults['pre'] as String?;
 
@@ -52,8 +98,6 @@ void bumpVersion(List<String> arguments) {
       exit(1);
     }
   }
-
-  final pubspecFile = resolvePubspecFile(customPath);
 
   if (!pubspecFile.existsSync()) {
     logError('pubspec.yaml not found at: ${pubspecFile.path}. Make sure the path is correct.', jsonMode);
@@ -127,7 +171,7 @@ void bumpVersion(List<String> arguments) {
         exit(1);
       }
     } else {
-      final bumpType = argResults['bump'] as String;
+      final bumpType = (argResults['bump'] as String?) ?? config.bump ?? 'patch';
       targetVersion = currentVersion.bump(
         bumpType,
         incrementBuild: !keepBuild,
@@ -154,6 +198,20 @@ void bumpVersion(List<String> arguments) {
     logInfo('\n[OK] pubspec.yaml updated: $currentVersion -> $newFullStr', quiet, jsonMode, colorCode: '\x1B[33m');
   } else {
     logInfo('\n[Dry Run] pubspec.yaml would be updated: $currentVersion -> $newFullStr', quiet, jsonMode, colorCode: '\x1B[33m');
+  }
+
+  // Handle CHANGELOG.md update if enabled
+  bool changelogUpdated = false;
+  if (runChangelog) {
+    changelogUpdated = ChangelogUpdater.updateChangelog(
+      pubspecPath: pubspecFile.path,
+      newVersion: newFullStr,
+      customChangelogPath: config.changelogPath,
+      customMsg: changelogMsg,
+      dryRun: dryRun,
+      quiet: quiet,
+      jsonMode: jsonMode,
+    );
   }
 
   // Handle Git integration
@@ -187,6 +245,7 @@ void bumpVersion(List<String> arguments) {
       'new_version': newFullStr,
       'pubspec_path': pubspecFile.path,
       'dry_run': dryRun,
+      'changelog_updated': changelogUpdated,
       'git_committed': gitCommitted,
       'git_tagged': gitTagged,
       'git_pushed': gitPushed,

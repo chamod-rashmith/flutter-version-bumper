@@ -6,7 +6,6 @@ ArgParser buildArgParser() {
     ..addOption('bump',
         abbr: 'b',
         allowed: ['major', 'minor', 'patch', 'build'],
-        defaultsTo: 'patch',
         help: 'Which SemVer part to bump (major, minor, patch, build)')
     ..addOption('set',
         abbr: 's',
@@ -34,13 +33,25 @@ ArgParser buildArgParser() {
         help: 'Automatically push committed changes and tags to git remote origin')
     ..addOption('commit-msg',
         abbr: 'm',
-        defaultsTo: 'chore: bump version to {version}',
         help: 'Commit message template (use {version} as placeholder)')
     ..addOption('tag-prefix',
-        defaultsTo: 'v',
         help: 'Git tag prefix')
     ..addOption('pre',
         help: 'Specify pre-release label and transition to/increment prerelease (e.g. beta, rc)')
+    ..addFlag('changelog',
+        abbr: 'c',
+        negatable: false,
+        help: 'Automatically update CHANGELOG.md with a new release section')
+    ..addOption('changelog-msg',
+        help: 'Custom message/note for the CHANGELOG.md entry')
+    ..addOption('config-path',
+        help: 'Path to custom configuration YAML file (.fvb.yaml)')
+    ..addOption('install-hook',
+        allowed: ['pre-commit', 'pre-push'],
+        help: 'Install an executable Git hook (pre-commit or pre-push)')
+    ..addOption('remove-hook',
+        allowed: ['pre-commit', 'pre-push'],
+        help: 'Remove an installed Git hook')
     ..addFlag('dry-run',
         abbr: 'd',
         negatable: false,
