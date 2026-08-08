@@ -17,6 +17,7 @@ import 'src/config/fvb_config.dart';
 import 'src/git/git_automation.dart';
 import 'src/git/git_hooks.dart';
 import 'src/models/pubspec_version.dart';
+import 'src/skill/skill_manager.dart';
 import 'src/utils/file_utils.dart';
 import 'src/utils/logger.dart';
 
@@ -24,6 +25,7 @@ export 'src/changelog/changelog_updater.dart';
 export 'src/config/fvb_config.dart';
 export 'src/git/git_hooks.dart';
 export 'src/models/pubspec_version.dart';
+export 'src/skill/skill_manager.dart';
 export 'src/utils/file_utils.dart' show versionRegex;
 
 /// Main entry point to process command-line arguments and perform the version bump.
@@ -46,8 +48,36 @@ void bumpVersion(List<String> arguments) {
   final quiet = argResults['quiet'] as bool;
   final jsonMode = argResults['json'] as bool;
   final dryRun = argResults['dry-run'] as bool;
+  final isGlobal = argResults['global'] as bool;
   final customPath = argResults['path'] as String?;
   final configPath = argResults['config-path'] as String?;
+
+  // Handle Agent Skill command flags if specified
+  final installSkill = argResults['install-skill'] as bool;
+  if (installSkill) {
+    final targetDir = customPath != null ? path.dirname(customPath) : Directory.current.path;
+    final ok = SkillManager.installSkill(
+      targetDir: targetDir,
+      global: isGlobal,
+      quiet: quiet,
+      jsonMode: jsonMode,
+    );
+    if (!ok) exit(1);
+    return;
+  }
+
+  final removeSkill = argResults['remove-skill'] as bool;
+  if (removeSkill) {
+    final targetDir = customPath != null ? path.dirname(customPath) : Directory.current.path;
+    final ok = SkillManager.removeSkill(
+      targetDir: targetDir,
+      global: isGlobal,
+      quiet: quiet,
+      jsonMode: jsonMode,
+    );
+    if (!ok) exit(1);
+    return;
+  }
 
   final pubspecFile = resolvePubspecFile(customPath);
 

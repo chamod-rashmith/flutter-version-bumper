@@ -1,4 +1,5 @@
----
+/// Embedded default SKILL.md content for Flutter Version Bumper.
+const String defaultSkillContent = '''---
 name: flutter-version-bumper
 description: Automates version management, Semantic Versioning (SemVer) bumping, CHANGELOG.md updating, and Git tagging/pushing for Flutter and Dart projects using the FVB CLI tool.
 ---
@@ -26,7 +27,7 @@ Before running `fvb`, verify if the `fvb` executable is available or execute it 
 ```bash
 fvb --help
 ```
-If `fvb` is not installed globally, agents can run `dart pub global activate --source git https://github.com/chamod-rashmith/flutter-version-bumper` or invoke local execution via `dart run bin/fvb.dart`.
+If `fvb` is not installed globally, agents can run `dart pub global activate flutter_version_bumper` or invoke local execution via `dart run bin/fvb.dart`.
 
 ---
 
@@ -108,3 +109,4 @@ If `fvb` is not installed globally, agents can run `dart pub global activate --s
    ```
 3. **Respect Project Configs**:
    If a `.fvb.yaml` file exists in the repository, FVB automatically respects its team default settings.
+''';

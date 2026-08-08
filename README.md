@@ -93,6 +93,19 @@ To remove installed hooks:
 fvb --remove-hook pre-commit
 ```
 
+#### 🤖 AI Agent Skill Integration
+Automatically install the official FVB Agent `SKILL.md` for AI Coding Agents (Antigravity, Gemini, Cursor, Windsurf, Claude Code):
+```bash
+# Install to local project (.agents/skills/ & .skills/)
+fvb --install-skill
+
+# Install globally (~/.agents/skills/ & ~/.gemini/config/skills/)
+fvb --install-skill --global
+
+# Remove installed skill
+fvb --remove-skill
+```
+
 #### 🎮 Interactive Mode
 Run FVB in step-by-step interactive mode:
 ```bash
@@ -152,6 +165,9 @@ fvb --help
 - `--config-path`: Custom configuration YAML file path (`.fvb.yaml`).
 - `--install-hook`: Install an executable Git hook (`pre-commit` or `pre-push`).
 - `--remove-hook`: Remove an installed Git hook.
+- `--install-skill`: Install AI Agent `SKILL.md` into local project or global directory.
+- `--remove-skill`: Remove installed AI Agent `SKILL.md` from project or global directory.
+- `--global`: Target global home agent skills directory when installing/removing skill.
 - `-d, --dry-run`: Simulates version bumps and prints the outcomes.
 - `-p, --path`: Path to the custom `pubspec.yaml` directory or file.
 - `-i, --interactive`: Launches a step-by-step interactive CLI interface.
@@ -177,7 +193,7 @@ jobs:
       - uses: dart-lang/setup-dart@v1
 
       - name: Install FVB
-        run: dart pub global activate --source git https://github.com/chamod-rashmith/flutter-version-bumper
+        run: dart pub global activate flutter_version_bumper
 
       - name: Setup Git User
         run: |
@@ -194,10 +210,14 @@ jobs:
 
 FVB comes with native **AI Coding Agent Skill** integration (`SKILL.md`) designed for autonomous agents (e.g. Antigravity, Gemini, Cursor, Windsurf, Claude Code).
 
-Agents can automatically discover FVB capabilities via:
-- `skills/flutter-version-bumper/SKILL.md`
+Agents or developers can install the skill with a single command:
+```bash
+# Project installation (.agents/skills/flutter-version-bumper/SKILL.md)
+fvb --install-skill
 
-To make FVB available to your team's AI coding agents, copy or link `skills/flutter-version-bumper/` into your project's `.agents/skills/` directory.
+# Global installation (~/.agents/skills/flutter-version-bumper/SKILL.md)
+fvb --install-skill --global
+```
 
 ---
 

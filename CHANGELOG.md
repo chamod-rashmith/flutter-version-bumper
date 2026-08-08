@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.4.0] - 2026-08-08
+
+- Added fvb --install-skill command to automatically deploy AI Agent SKILL.md into local or global agent directories
+
 ## [1.3.0] - 2026-08-08
 
 ### Added

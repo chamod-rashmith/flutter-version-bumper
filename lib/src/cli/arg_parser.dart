@@ -52,6 +52,15 @@ ArgParser buildArgParser() {
     ..addOption('remove-hook',
         allowed: ['pre-commit', 'pre-push'],
         help: 'Remove an installed Git hook')
+    ..addFlag('install-skill',
+        negatable: false,
+        help: 'Install AI Agent SKILL.md into local project or global directory')
+    ..addFlag('remove-skill',
+        negatable: false,
+        help: 'Remove installed AI Agent SKILL.md from project or global directory')
+    ..addFlag('global',
+        negatable: false,
+        help: 'Target global home agent skills directory when installing/removing skill')
     ..addFlag('dry-run',
         abbr: 'd',
         negatable: false,
