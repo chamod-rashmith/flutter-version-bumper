@@ -46,7 +46,13 @@ Map<String, bool> runGitAutomation({
   bool pushed = false;
 
   if (doCommit) {
-    final addRes = Process.runSync('git', ['add', path.basename(pubspecPath)], workingDirectory: dir);
+    final filesToAdd = [path.basename(pubspecPath)];
+    final changelogFile = File(path.join(dir, 'CHANGELOG.md'));
+    if (changelogFile.existsSync()) {
+      filesToAdd.add('CHANGELOG.md');
+    }
+
+    final addRes = Process.runSync('git', ['add', ...filesToAdd], workingDirectory: dir);
     if (addRes.exitCode != 0) {
       logWarning('git add failed: ${addRes.stderr}', quiet, jsonMode);
       return {'committed': false, 'tagged': false, 'pushed': false};
