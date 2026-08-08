@@ -190,6 +190,17 @@ jobs:
 
 ---
 
+## 🤖 AI Coding Agent Skill Support
+
+FVB comes with native **AI Coding Agent Skill** integration (`SKILL.md`) designed for autonomous agents (e.g. Antigravity, Gemini, Cursor, Windsurf, Claude Code).
+
+Agents can automatically discover FVB capabilities via:
+- `skills/flutter-version-bumper/SKILL.md`
+
+To make FVB available to your team's AI coding agents, copy or link `skills/flutter-version-bumper/` into your project's `.agents/skills/` directory.
+
+---
+
 ## 🔧 Troubleshooting
 
 | Issue | Solution |
