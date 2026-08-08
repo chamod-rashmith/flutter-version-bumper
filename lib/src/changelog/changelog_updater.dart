@@ -4,6 +4,9 @@ import '../utils/logger.dart';
 
 /// Helper to handle updating CHANGELOG.md with release notes.
 class ChangelogUpdater {
+  /// Creates a [ChangelogUpdater] instance.
+  const ChangelogUpdater();
+
   /// Updates or creates CHANGELOG.md with a new version section.
   static bool updateChangelog({
     required String pubspecPath,

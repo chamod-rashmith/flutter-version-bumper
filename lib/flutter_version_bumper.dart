@@ -1,3 +1,9 @@
+/// Flutter Version Bumper (FVB) library.
+///
+/// Provides CLI tooling and programmatic APIs for parsing, bumping, and automating
+/// Semantic Versioning (SemVer) and build numbers in Flutter/Dart projects.
+library flutter_version_bumper;
+
 import 'dart:convert';
 import 'dart:io';
 

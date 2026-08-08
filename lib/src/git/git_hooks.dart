@@ -4,6 +4,9 @@ import '../utils/logger.dart';
 
 /// Manages installation and removal of Git hooks for FVB.
 class GitHooksManager {
+  /// Creates a [GitHooksManager] instance.
+  const GitHooksManager();
+
   /// Installs an executable Git pre-commit or pre-push hook.
   static bool installHook({
     required String projectDir,

@@ -2,20 +2,42 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:yaml/yaml.dart';
 
-/// Configuration options loaded from `.fvb.yaml` or `pubspec.yaml` (fvb: section).
+/// Configuration options loaded from `.fvb.yaml` or `pubspec.yaml` (`fvb:` section).
 class FvbConfig {
+  /// Default bump segment ('major', 'minor', 'patch', 'build').
   final String? bump;
+
+  /// Whether to keep current build number instead of incrementing.
   final bool? keepBuild;
+
+  /// Whether to remove build number segment entirely.
   final bool? noBuild;
+
+  /// Whether to commit pubspec.yaml and CHANGELOG.md automatically.
   final bool? git;
+
+  /// Whether to create a Git tag automatically.
   final bool? gitTag;
+
+  /// Whether to push commits and tags to remote Git origin automatically.
   final bool? gitPush;
+
+  /// Custom commit message template (e.g., "chore: release {version}").
   final String? commitMsg;
+
+  /// Tag prefix for Git tags (e.g., "v").
   final String? tagPrefix;
+
+  /// Whether to automatically update CHANGELOG.md.
   final bool? changelog;
+
+  /// Custom path to CHANGELOG.md file or directory.
   final String? changelogPath;
+
+  /// Custom entry message for CHANGELOG.md release notes.
   final String? changelogMsg;
 
+  /// Creates an [FvbConfig] instance with specified configuration options.
   FvbConfig({
     this.bump,
     this.keepBuild,
@@ -69,6 +91,7 @@ class FvbConfig {
     return FvbConfig();
   }
 
+  /// Creates an [FvbConfig] instance from a parsed YAML map.
   factory FvbConfig.fromYaml(YamlMap map) {
     return FvbConfig(
       bump: map['bump'] as String?,

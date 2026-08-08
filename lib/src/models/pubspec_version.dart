@@ -1,12 +1,22 @@
 /// Represents a parsed version string conforming to Semantic Versioning (SemVer)
 /// with an optional build number (e.g., "1.2.3-beta.1+45").
 class PubspecVersion {
+  /// Major version segment.
   final int major;
+
+  /// Minor version segment.
   final int minor;
+
+  /// Patch version segment.
   final int patch;
+
+  /// Optional pre-release identifier string (e.g., "beta.1").
   final String? preRelease;
+
+  /// Optional build number or build metadata string (e.g., "45").
   final String? build;
 
+  /// Creates a [PubspecVersion] instance with specified version components.
   PubspecVersion({
     required this.major,
     required this.minor,
@@ -156,6 +166,7 @@ class PubspecVersion {
     );
   }
 
+  /// Returns standard SemVer formatted version string (e.g., "1.2.3-beta.1+45").
   @override
   String toString() {
     final sb = StringBuffer('$major.$minor.$patch');
