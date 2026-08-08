@@ -2,7 +2,17 @@
 
 ## [1.3.0] - 2026-08-08
 
-- Added config file support, automated changelog updater, git hooks installer, and modularized codebase into lib/src/
+### Added
+- **Project Configuration File Support (`.fvb.yaml` / `pubspec.yaml`)**:
+  - Save project-level defaults in `.fvb.yaml` or under `fvb:` in `pubspec.yaml` to avoid repeating long CLI flags.
+- **Automated `CHANGELOG.md` Updater (`--changelog` / `-c`)**:
+  - Automatically prepends new release sections to `CHANGELOG.md` upon version bumping (`-c` / `--changelog-msg`).
+- **Git Hooks Integration (`--install-hook` / `--remove-hook`)**:
+  - Easily install executable Git pre-commit or pre-push hooks (`fvb --install-hook pre-commit`) to enforce versioning checks.
+
+### Refactored
+- **Clean Modular Architecture (`lib/src/`)**:
+  - Refactored monolithic codebase into dedicated modules (`models/`, `cli/`, `config/`, `git/`, `changelog/`, `utils/`) for enhanced maintainability and testability.
 
 All notable changes to this project will be documented in this file.
 
