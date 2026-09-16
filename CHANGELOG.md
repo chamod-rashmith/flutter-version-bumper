@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.5.0] - 2026-09-16
+
+### Added
+- **Pre-Release Promotion (`--release` / `--promote`)**:
+  - Graduate any pre-release version (e.g., `1.2.0-beta.1+2`) directly to a stable production release (`1.2.0+3`).
+  - Added option `0. Promote to Stable Release` to interactive mode (`fvb -i`) when current version has a pre-release.
+- **Git Working Tree Safety Guard (`--allow-dirty`)**:
+  - Automatically verifies that the Git working tree has no uncommitted changes before performing commit/tag/push operations, preventing accidental commits.
+  - Added `--allow-dirty` CLI flag and `allow-dirty` / `allow_dirty` configuration setting to bypass the check when intentional.
+- **Standard POSIX Exit Codes (`package:io`)**:
+  - Standardized exit codes across the CLI for seamless CI/CD integration:
+    - `0` (`ExitCode.success`) on successful execution.
+    - `64` (`ExitCode.usage`) on CLI syntax errors, conflicting arguments, or invalid build numbers.
+    - `65` (`ExitCode.data`) on version string or SemVer formatting errors.
+    - `74` (`ExitCode.ioError`) on file system read/write errors.
+    - `78` (`ExitCode.config`) on `.fvb.yaml` configuration parsing errors.
+- **Clean Asynchronous Stack Trace Handling (`package:stack_trace`)**:
+  - Strips noisy internal Dart runtime frames to output concise, readable `Chain.terse` error traces on uncaught failures.
+- **Strict Static Analysis Configuration**:
+  - Added `analysis_options.yaml` enforcing `package:lints/recommended.yaml` and strict mode (`strict-casts`, `strict-inference`, `strict-raw-types`).
+- **Modern AI Agent Skill**:
+  - Modernized `SKILL.md` and embedded `defaultSkillContent` with progressive disclosure triggers, comprehensive command recipes, POSIX exit codes, and machine-readable JSON schemas.
+- **Expanded Test Coverage**:
+  - Added 30 new tests in `test/cli_exit_codes_and_enhancements_test.dart` bringing total passing tests to 74.
+
+### Improved
+- **Configuration Parsing**:
+  - Added support for kebab-case configuration keys in `.fvb.yaml` (e.g., `allow-dirty`, `tag-prefix`, `keep-build`, `no-build`).
+- **Path Resolution**:
+  - Improved canonical absolute path comparison to eliminate false-positive dirty tree errors on Windows and across relative paths.
+
 ## [1.4.1] - 2026-08-08
 
 ### Fixed

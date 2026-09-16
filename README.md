@@ -229,7 +229,7 @@ fvb --install-skill --global
 | Issue | Solution |
 | :--- | :--- |
 | `pubspec.yaml not found` | Ensure you're in the **root directory** of your Flutter project. |
-| `Could not parse version` | Ensure your `pubspec.yaml` has exactly `version: X.Y.Z+W`. |
+| `Could not parse version` | Ensure your `pubspec.yaml` has `version: X.Y.Z` or `version: X.Y.Z+W`. |
 | `fvb command not found` | Add `$HOME/.pub-cache/bin` (macOS/Linux) or `%LOCALAPPDATA%\Pub\Cache\bin` (Windows) to your PATH. |
 
 ---
