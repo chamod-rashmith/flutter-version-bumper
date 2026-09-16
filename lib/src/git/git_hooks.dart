@@ -16,7 +16,9 @@ class GitHooksManager {
   }) {
     final gitHooksDir = Directory(path.join(projectDir, '.git', 'hooks'));
     if (!gitHooksDir.existsSync()) {
-      logError('Git repository hooks directory not found at ${gitHooksDir.path}. Make sure git is initialized.', jsonMode);
+      logError(
+          'Git repository hooks directory not found at ${gitHooksDir.path}. Make sure git is initialized.',
+          jsonMode);
       return false;
     }
 
@@ -38,7 +40,9 @@ echo "✅ FVB check passed."
       if (!Platform.isWindows) {
         Process.runSync('chmod', ['+x', hookFile.path]);
       }
-      logInfo('[Git Hook] Installed $hookType hook at: ${hookFile.path}', quiet, jsonMode, colorCode: '\x1B[32m');
+      logInfo('[Git Hook] Installed $hookType hook at: ${hookFile.path}', quiet,
+          jsonMode,
+          colorCode: '\x1B[32m');
       return true;
     } catch (e) {
       logError('Failed to install Git hook: ${e.toString()}', jsonMode);
@@ -57,7 +61,8 @@ echo "✅ FVB check passed."
     if (hookFile.existsSync()) {
       try {
         hookFile.deleteSync();
-        logInfo('[Git Hook] Removed $hookType hook.', quiet, jsonMode, colorCode: '\x1B[33m');
+        logInfo('[Git Hook] Removed $hookType hook.', quiet, jsonMode,
+            colorCode: '\x1B[33m');
         return true;
       } catch (e) {
         logError('Failed to remove Git hook: ${e.toString()}', jsonMode);

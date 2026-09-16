@@ -10,7 +10,8 @@ void main() {
   setUp(() {
     tempDir = Directory.systemTemp.createTempSync('fvb_enhancements_test_');
     pubspecFile = File(path.join(tempDir.path, 'pubspec.yaml'));
-    pubspecFile.writeAsStringSync('name: test_enhancements\nversion: 1.0.0+1\n');
+    pubspecFile
+        .writeAsStringSync('name: test_enhancements\nversion: 1.0.0+1\n');
   });
 
   tearDown(() {
@@ -22,7 +23,13 @@ void main() {
       final changelogFile = File(path.join(tempDir.path, 'CHANGELOG.md'));
       changelogFile.writeAsStringSync('# Changelog\n\nInitial notes.\n');
 
-      bumpVersion(['-p', pubspecFile.path, '-c', '--changelog-msg', 'Fixed login authentication bug']);
+      bumpVersion([
+        '-p',
+        pubspecFile.path,
+        '-c',
+        '--changelog-msg',
+        'Fixed login authentication bug'
+      ]);
 
       final content = changelogFile.readAsStringSync();
       expect(content, contains('## [1.0.1+2]'));
@@ -80,7 +87,9 @@ fvb:
       expect(config.commitMsg, equals('release: {version}'));
     });
 
-    test('config automatically enables changelog updating if configured in .fvb.yaml', () {
+    test(
+        'config automatically enables changelog updating if configured in .fvb.yaml',
+        () {
       final dotFvb = File(path.join(tempDir.path, '.fvb.yaml'));
       dotFvb.writeAsStringSync('''
 fvb:

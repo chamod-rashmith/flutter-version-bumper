@@ -59,9 +59,11 @@ If `fvb` is not installed globally, agents can run `dart pub global activate --s
   ```bash
   fvb --pre rc
   ```
-- **Promote to Stable Track**:
+- **Promote Pre-Release to Stable Release**:
   ```bash
-  fvb -b patch
+  fvb --release
+  # or alias
+  fvb --promote
   ```
 
 ### 3. Automated CHANGELOG.md Updating
@@ -74,6 +76,10 @@ If `fvb` is not installed globally, agents can run `dart pub global activate --s
 - **Execute Full Release**:
   ```bash
   fvb -b minor -c --changelog-msg "Release notes" -g -t --git-push
+  ```
+- **Allow Git Commit on Dirty Working Tree**:
+  ```bash
+  fvb -g --allow-dirty
   ```
 
 ### 5. Git Hooks & Agent Skill Setup

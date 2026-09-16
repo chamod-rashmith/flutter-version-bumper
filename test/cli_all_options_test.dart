@@ -12,7 +12,8 @@ void main() {
   setUp(() {
     tempDir = Directory.systemTemp.createTempSync('fvb_cli_all_options_test_');
     pubspecFile = File(path.join(tempDir.path, 'pubspec.yaml'));
-    pubspecFile.writeAsStringSync('name: test_cli_all_options\nversion: 1.0.0+1\n');
+    pubspecFile
+        .writeAsStringSync('name: test_cli_all_options\nversion: 1.0.0+1\n');
   });
 
   tearDown(() {
@@ -63,7 +64,8 @@ void main() {
       expect(prePushFile.existsSync(), isFalse);
     });
 
-    test('git flags: -g, -t, --git-push, -m, --tag-prefix in dry-run json mode', () {
+    test('git flags: -g, -t, --git-push, -m, --tag-prefix in dry-run json mode',
+        () {
       Process.runSync('git', ['init'], workingDirectory: tempDir.path);
       final prints = <String>[];
       final spec = ZoneSpecification(print: (self, parent, zone, line) {
@@ -72,12 +74,15 @@ void main() {
 
       Zone.current.fork(specification: spec).run(() {
         bumpVersion([
-          '-p', pubspecFile.path,
+          '-p',
+          pubspecFile.path,
           '-g',
           '-t',
           '--git-push',
-          '-m', 'release: v{version}',
-          '--tag-prefix', 'v',
+          '-m',
+          'release: v{version}',
+          '--tag-prefix',
+          'v',
           '-d',
           '--json'
         ]);
@@ -94,9 +99,11 @@ void main() {
 
     test('changelog options: -c, --changelog-msg', () {
       bumpVersion([
-        '-p', pubspecFile.path,
+        '-p',
+        pubspecFile.path,
         '-c',
-        '--changelog-msg', 'Added new authentication module',
+        '--changelog-msg',
+        'Added new authentication module',
         '-q'
       ]);
 

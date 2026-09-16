@@ -11,9 +11,16 @@ void printHelp(ArgParser parser) {
   print('  fvb                        # Bumps patch (1.0.0+1 -> 1.0.1+2)');
   print('  fvb -b minor               # Bumps minor (1.0.1+2 -> 1.1.0+3)');
   print('  fvb -s 2.0.0-beta.1        # Sets version to 2.0.0-beta.1+build');
-  print('  fvb --keep-build           # Bumps patch but keeps same build number');
-  print('  fvb --pre beta             # Bumps to next beta prerelease (e.g. 1.0.1-beta.1)');
-  print('  fvb -g -t --git-push       # Commits, tags and pushes to Git remote origin');
+  print(
+      '  fvb --keep-build           # Bumps patch but keeps same build number');
+  print(
+      '  fvb --pre beta             # Bumps to next beta prerelease (e.g. 1.0.1-beta.1)');
+  print(
+      '  fvb --release              # Promotes pre-release to stable release (1.0.1-beta.1+2 -> 1.0.1+3)');
+  print(
+      '  fvb -g -t --git-push       # Commits, tags and pushes to Git remote origin');
+  print(
+      '  fvb -g --allow-dirty       # Commits version even with dirty Git working tree');
   print('  fvb -i                     # Runs interactive selection CLI menu');
 }
 

@@ -2,16 +2,39 @@ import 'dart:io';
 import '../models/pubspec_version.dart';
 
 /// Provides a standard terminal-based selection flow.
-PubspecVersion runInteractive(PubspecVersion current, bool keepBuild, int? explicitBuild, bool removeBuild) {
+PubspecVersion runInteractive(PubspecVersion current, bool keepBuild,
+    int? explicitBuild, bool removeBuild) {
   print('🚀 \x1B[36mFlutter Version Bumper - Interactive Mode\x1B[0m');
   print('Current Version: \x1B[33m$current\x1B[0m\n');
   print('Select the part to bump:');
 
-  final patchPreview = current.bump('patch', incrementBuild: !keepBuild, explicitBuild: explicitBuild, removeBuild: removeBuild);
-  final minorPreview = current.bump('minor', incrementBuild: !keepBuild, explicitBuild: explicitBuild, removeBuild: removeBuild);
-  final majorPreview = current.bump('major', incrementBuild: !keepBuild, explicitBuild: explicitBuild, removeBuild: removeBuild);
-  final buildPreview = current.bump('build', incrementBuild: !keepBuild, explicitBuild: explicitBuild, removeBuild: removeBuild);
+  final patchPreview = current.bump('patch',
+      incrementBuild: !keepBuild,
+      explicitBuild: explicitBuild,
+      removeBuild: removeBuild);
+  final minorPreview = current.bump('minor',
+      incrementBuild: !keepBuild,
+      explicitBuild: explicitBuild,
+      removeBuild: removeBuild);
+  final majorPreview = current.bump('major',
+      incrementBuild: !keepBuild,
+      explicitBuild: explicitBuild,
+      removeBuild: removeBuild);
+  final buildPreview = current.bump('build',
+      incrementBuild: !keepBuild,
+      explicitBuild: explicitBuild,
+      removeBuild: removeBuild);
 
+  final releasePreview = current.preRelease != null
+      ? current.promote(
+          incrementBuild: !keepBuild,
+          explicitBuild: explicitBuild,
+          removeBuild: removeBuild)
+      : null;
+
+  if (releasePreview != null) {
+    print('  0. Promote to Stable Release (-> \x1B[32m$releasePreview\x1B[0m)');
+  }
   print('  1. Patch  (-> \x1B[32m$patchPreview\x1B[0m)');
   print('  2. Minor  (-> \x1B[32m$minorPreview\x1B[0m)');
   print('  3. Major  (-> \x1B[32m$majorPreview\x1B[0m)');
@@ -20,17 +43,22 @@ PubspecVersion runInteractive(PubspecVersion current, bool keepBuild, int? expli
 
   int nullAttempts = 0;
   while (true) {
-    stdout.write('\nEnter choice (1-5): ');
+    final prompt = releasePreview != null
+        ? '\nEnter choice (0-5): '
+        : '\nEnter choice (1-5): ';
+    stdout.write(prompt);
     final choice = stdin.readLineSync()?.trim();
     if (choice == null) {
       nullAttempts++;
       if (nullAttempts > 3) {
-        throw StateError('No standard input stream. Cannot run in interactive mode.');
+        throw StateError(
+            'No standard input stream. Cannot run in interactive mode.');
       }
       continue;
     }
     nullAttempts = 0;
 
+    if (choice == '0' && releasePreview != null) return releasePreview;
     if (choice == '1') return patchPreview;
     if (choice == '2') return minorPreview;
     if (choice == '3') return majorPreview;
@@ -40,7 +68,8 @@ PubspecVersion runInteractive(PubspecVersion current, bool keepBuild, int? expli
         stdout.write('Enter custom version (e.g., 2.0.0-beta.1+3): ');
         final customStr = stdin.readLineSync()?.trim();
         if (customStr == null) {
-          throw StateError('No standard input stream. Cannot run in interactive mode.');
+          throw StateError(
+              'No standard input stream. Cannot run in interactive mode.');
         }
         if (customStr.isEmpty) {
           print('\x1B[31mVersion cannot be empty.\x1B[0m');
@@ -53,6 +82,7 @@ PubspecVersion runInteractive(PubspecVersion current, bool keepBuild, int? expli
         }
       }
     }
-    print('\x1B[31mInvalid choice. Please select 1, 2, 3, 4, or 5.\x1B[0m');
+    print(
+        '\x1B[31mInvalid choice. Please select ${releasePreview != null ? "0, " : ""}1, 2, 3, 4, or 5.\x1B[0m');
   }
 }

@@ -22,6 +22,12 @@ class FvbConfig {
   /// Whether to push commits and tags to remote Git origin automatically.
   final bool? gitPush;
 
+  /// Whether to allow Git operations even with uncommitted changes in the working tree.
+  final bool? allowDirty;
+
+  /// Whether to promote a pre-release version to a stable release.
+  final bool? release;
+
   /// Custom commit message template (e.g., "chore: release {version}").
   final String? commitMsg;
 
@@ -45,6 +51,8 @@ class FvbConfig {
     this.git,
     this.gitTag,
     this.gitPush,
+    this.allowDirty,
+    this.release,
     this.commitMsg,
     this.tagPrefix,
     this.changelog,
@@ -53,7 +61,8 @@ class FvbConfig {
   });
 
   /// Loads configuration from explicit custom path, `.fvb.yaml`, or `pubspec.yaml` (`fvb:` section).
-  static FvbConfig load({String? configPath, required String targetPubspecPath}) {
+  static FvbConfig load(
+      {String? configPath, required String targetPubspecPath}) {
     final String projectDir = path.dirname(targetPubspecPath);
 
     // 1. Try explicit config path or .fvb.yaml in project dir
@@ -63,14 +72,23 @@ class FvbConfig {
     if (dotFvbFile.existsSync()) {
       try {
         final content = dotFvbFile.readAsStringSync();
-        final YamlMap? yamlMap = loadYaml(content) as YamlMap?;
-        if (yamlMap != null) {
-          final fvbSection = yamlMap.containsKey('fvb') ? yamlMap['fvb'] as YamlMap? : yamlMap;
-          if (fvbSection != null) {
+        final dynamic yamlParsed = loadYaml(content);
+        if (yamlParsed is YamlMap) {
+          final dynamic fvbSection =
+              yamlParsed.containsKey('fvb') ? yamlParsed['fvb'] : yamlParsed;
+          if (fvbSection is YamlMap) {
             return FvbConfig.fromYaml(fvbSection);
           }
+        } else if (configPath != null) {
+          throw FormatException(
+              'Configuration in "$configPath" must be a valid YAML mapping.');
         }
-      } catch (_) {}
+      } catch (e) {
+        if (configPath != null) {
+          throw FormatException(
+              'Failed to parse configuration file at "$configPath": ${e.toString()}');
+        }
+      }
     }
 
     // 2. Try fvb: section inside pubspec.yaml
@@ -78,10 +96,10 @@ class FvbConfig {
     if (pubspecFile.existsSync()) {
       try {
         final content = pubspecFile.readAsStringSync();
-        final YamlMap? yamlMap = loadYaml(content) as YamlMap?;
-        if (yamlMap != null && yamlMap.containsKey('fvb')) {
-          final fvbSection = yamlMap['fvb'] as YamlMap?;
-          if (fvbSection != null) {
+        final dynamic yamlParsed = loadYaml(content);
+        if (yamlParsed is YamlMap && yamlParsed.containsKey('fvb')) {
+          final dynamic fvbSection = yamlParsed['fvb'];
+          if (fvbSection is YamlMap) {
             return FvbConfig.fromYaml(fvbSection);
           }
         }
@@ -95,16 +113,36 @@ class FvbConfig {
   factory FvbConfig.fromYaml(YamlMap map) {
     return FvbConfig(
       bump: map['bump'] as String?,
-      keepBuild: map['keep_build'] as bool? ?? map['keepBuild'] as bool?,
-      noBuild: map['no_build'] as bool? ?? map['noBuild'] as bool?,
+      keepBuild: map['keep_build'] as bool? ??
+          map['keepBuild'] as bool? ??
+          map['keep-build'] as bool?,
+      noBuild: map['no_build'] as bool? ??
+          map['noBuild'] as bool? ??
+          map['no-build'] as bool?,
       git: map['git'] as bool?,
-      gitTag: map['git_tag'] as bool? ?? map['gitTag'] as bool?,
-      gitPush: map['git_push'] as bool? ?? map['gitPush'] as bool?,
-      commitMsg: map['commit_msg'] as String? ?? map['commitMsg'] as String?,
-      tagPrefix: map['tag_prefix'] as String? ?? map['tagPrefix'] as String?,
+      gitTag: map['git_tag'] as bool? ??
+          map['gitTag'] as bool? ??
+          map['git-tag'] as bool?,
+      gitPush: map['git_push'] as bool? ??
+          map['gitPush'] as bool? ??
+          map['git-push'] as bool?,
+      allowDirty: map['allow_dirty'] as bool? ??
+          map['allowDirty'] as bool? ??
+          map['allow-dirty'] as bool?,
+      release: map['release'] as bool? ?? map['promote'] as bool?,
+      commitMsg: map['commit_msg'] as String? ??
+          map['commitMsg'] as String? ??
+          map['commit-msg'] as String?,
+      tagPrefix: map['tag_prefix'] as String? ??
+          map['tagPrefix'] as String? ??
+          map['tag-prefix'] as String?,
       changelog: map['changelog'] as bool?,
-      changelogPath: map['changelog_path'] as String? ?? map['changelogPath'] as String?,
-      changelogMsg: map['changelog_msg'] as String? ?? map['changelogMsg'] as String?,
+      changelogPath: map['changelog_path'] as String? ??
+          map['changelogPath'] as String? ??
+          map['changelog-path'] as String?,
+      changelogMsg: map['changelog_msg'] as String? ??
+          map['changelogMsg'] as String? ??
+          map['changelog-msg'] as String?,
     );
   }
 }

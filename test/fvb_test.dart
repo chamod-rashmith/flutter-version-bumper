@@ -68,7 +68,8 @@ void main() {
   });
 
   test('version in middle of pubspec', () {
-    pubspecFile.writeAsStringSync('name: middle_test\ndescription: "A test project"\nversion: 1.0.0+1\ndependencies:\n  flutter: sdk: flutter\n');
+    pubspecFile.writeAsStringSync(
+        'name: middle_test\ndescription: "A test project"\nversion: 1.0.0+1\ndependencies:\n  flutter: sdk: flutter\n');
     bumpVersion(['-b', 'minor']);
     final content = pubspecFile.readAsStringSync();
     expect(content, contains('name: middle_test'));
@@ -90,8 +91,10 @@ void main() {
   });
 
   test('pre-release and metadata version parsing', () {
-    pubspecFile.writeAsStringSync('name: test_project\nversion: 1.0.0-beta.1+12\n');
-    bumpVersion([]); // should increment patch, clearing pre-release, incrementing build
+    pubspecFile
+        .writeAsStringSync('name: test_project\nversion: 1.0.0-beta.1+12\n');
+    bumpVersion(
+        []); // should increment patch, clearing pre-release, incrementing build
     final content = pubspecFile.readAsStringSync();
     expect(content, contains('version: 1.0.1+13'));
   });
@@ -151,7 +154,7 @@ void main() {
     final spec = ZoneSpecification(print: (self, parent, zone, line) {
       prints.add(line);
     });
-    
+
     Zone.current.fork(specification: spec).run(() {
       bumpVersion(['--json']);
     });
@@ -172,28 +175,32 @@ void main() {
   });
 
   test('increment existing pre-release beta', () {
-    pubspecFile.writeAsStringSync('name: test_project\nversion: 1.0.1-beta.1+2\n');
+    pubspecFile
+        .writeAsStringSync('name: test_project\nversion: 1.0.1-beta.1+2\n');
     bumpVersion(['--pre', 'beta']);
     final content = pubspecFile.readAsStringSync();
     expect(content, contains('version: 1.0.1-beta.2+3'));
   });
 
   test('change pre-release label from beta to rc', () {
-    pubspecFile.writeAsStringSync('name: test_project\nversion: 1.0.1-beta.2+3\n');
+    pubspecFile
+        .writeAsStringSync('name: test_project\nversion: 1.0.1-beta.2+3\n');
     bumpVersion(['--pre', 'rc']);
     final content = pubspecFile.readAsStringSync();
     expect(content, contains('version: 1.0.1-rc.1+4'));
   });
 
   test('stable release promotion (removing pre-release label)', () {
-    pubspecFile.writeAsStringSync('name: test_project\nversion: 1.0.1-beta.2+3\n');
+    pubspecFile
+        .writeAsStringSync('name: test_project\nversion: 1.0.1-beta.2+3\n');
     bumpVersion([]);
     final content = pubspecFile.readAsStringSync();
     expect(content, contains('version: 1.0.2+4'));
   });
 
   test('non-numeric pre-release segment fallback', () {
-    pubspecFile.writeAsStringSync('name: test_project\nversion: 1.0.1-beta+2\n');
+    pubspecFile
+        .writeAsStringSync('name: test_project\nversion: 1.0.1-beta+2\n');
     bumpVersion(['--pre', 'beta']);
     final content = pubspecFile.readAsStringSync();
     expect(content, contains('version: 1.0.1-beta.1+3'));

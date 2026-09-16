@@ -20,7 +20,8 @@ class SkillManager {
     String? customContent,
   }) {
     final content = customContent ?? defaultSkillContent;
-    final List<File> targetFiles = _getTargetSkillFiles(targetDir, global: global);
+    final List<File> targetFiles =
+        _getTargetSkillFiles(targetDir, global: global);
 
     final List<String> installedPaths = [];
 
@@ -30,7 +31,8 @@ class SkillManager {
         file.writeAsStringSync(content);
         installedPaths.add(file.path);
       } catch (e) {
-        logError('Failed to write skill file to ${file.path}: ${e.toString()}', jsonMode);
+        logError('Failed to write skill file to ${file.path}: ${e.toString()}',
+            jsonMode);
         return false;
       }
     }
@@ -63,7 +65,8 @@ class SkillManager {
     bool quiet = false,
     bool jsonMode = false,
   }) {
-    final List<File> targetFiles = _getTargetSkillFiles(targetDir, global: global);
+    final List<File> targetFiles =
+        _getTargetSkillFiles(targetDir, global: global);
     final List<String> removedPaths = [];
 
     for (final file in targetFiles) {
@@ -77,7 +80,9 @@ class SkillManager {
             parent.deleteSync();
           }
         } catch (e) {
-          logError('Failed to remove skill file at ${file.path}: ${e.toString()}', jsonMode);
+          logError(
+              'Failed to remove skill file at ${file.path}: ${e.toString()}',
+              jsonMode);
           return false;
         }
       }
@@ -101,7 +106,10 @@ class SkillManager {
           colorCode: '\x1B[33m',
         );
       } else {
-        logInfo('[Skill] No installed $scopeStr AI Agent Skill found to remove.', quiet, jsonMode);
+        logInfo(
+            '[Skill] No installed $scopeStr AI Agent Skill found to remove.',
+            quiet,
+            jsonMode);
       }
     }
 
@@ -109,13 +117,15 @@ class SkillManager {
   }
 
   /// Resolves the list of target SKILL.md files for given directory or global mode.
-  static List<File> _getTargetSkillFiles(String targetDir, {required bool global}) {
+  static List<File> _getTargetSkillFiles(String targetDir,
+      {required bool global}) {
     if (global) {
       final homeDir = _getHomeDir();
       if (homeDir == null) return [];
       return [
         File(path.join(homeDir, '.agents', 'skills', skillName, 'SKILL.md')),
-        File(path.join(homeDir, '.gemini', 'config', 'skills', skillName, 'SKILL.md')),
+        File(path.join(
+            homeDir, '.gemini', 'config', 'skills', skillName, 'SKILL.md')),
       ];
     } else {
       return [

@@ -15,7 +15,8 @@ void main() {
   });
 
   group('SkillManager Tests', () {
-    test('installs SKILL.md into local .agents/skills and .skills directories', () {
+    test('installs SKILL.md into local .agents/skills and .skills directories',
+        () {
       final success = SkillManager.installSkill(
         targetDir: tempDir.path,
         global: false,
@@ -24,8 +25,10 @@ void main() {
 
       expect(success, isTrue);
 
-      final agentsSkillFile = File(path.join(tempDir.path, '.agents', 'skills', 'flutter-version-bumper', 'SKILL.md'));
-      final skillsSkillFile = File(path.join(tempDir.path, '.skills', 'flutter-version-bumper', 'SKILL.md'));
+      final agentsSkillFile = File(path.join(tempDir.path, '.agents', 'skills',
+          'flutter-version-bumper', 'SKILL.md'));
+      final skillsSkillFile = File(path.join(
+          tempDir.path, '.skills', 'flutter-version-bumper', 'SKILL.md'));
 
       expect(agentsSkillFile.existsSync(), isTrue);
       expect(skillsSkillFile.existsSync(), isTrue);
@@ -42,8 +45,10 @@ void main() {
         quiet: true,
       );
 
-      final agentsSkillFile = File(path.join(tempDir.path, '.agents', 'skills', 'flutter-version-bumper', 'SKILL.md'));
-      final skillsSkillFile = File(path.join(tempDir.path, '.skills', 'flutter-version-bumper', 'SKILL.md'));
+      final agentsSkillFile = File(path.join(tempDir.path, '.agents', 'skills',
+          'flutter-version-bumper', 'SKILL.md'));
+      final skillsSkillFile = File(path.join(
+          tempDir.path, '.skills', 'flutter-version-bumper', 'SKILL.md'));
 
       expect(agentsSkillFile.existsSync(), isTrue);
 
@@ -64,7 +69,8 @@ void main() {
 
       bumpVersion(['-p', pubspecFile.path, '--install-skill', '--quiet']);
 
-      final agentsSkillFile = File(path.join(tempDir.path, '.agents', 'skills', 'flutter-version-bumper', 'SKILL.md'));
+      final agentsSkillFile = File(path.join(tempDir.path, '.agents', 'skills',
+          'flutter-version-bumper', 'SKILL.md'));
       expect(agentsSkillFile.existsSync(), isTrue);
     });
   });

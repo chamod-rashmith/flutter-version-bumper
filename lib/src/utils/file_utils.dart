@@ -9,11 +9,13 @@ final RegExp versionRegex = RegExp(r'^version:\s*([^\s#]+)', multiLine: true);
 /// Resolves standard or custom path to pubspec.yaml.
 File resolvePubspecFile(String? customPath) {
   if (customPath == null) {
-    return File(path.join(Directory.current.path, 'pubspec.yaml'));
+    return File(
+        path.canonicalize(path.join(Directory.current.path, 'pubspec.yaml')));
   }
 
-  if (FileSystemEntity.isDirectorySync(customPath)) {
-    return File(path.join(customPath, 'pubspec.yaml'));
+  final absPath = path.canonicalize(path.absolute(customPath));
+  if (FileSystemEntity.isDirectorySync(absPath)) {
+    return File(path.canonicalize(path.join(absPath, 'pubspec.yaml')));
   }
-  return File(customPath);
+  return File(absPath);
 }

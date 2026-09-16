@@ -9,15 +9,22 @@ void main() {
   // Parse a Semantic Version string
   final version = PubspecVersion.parse('1.2.3-beta.1+42');
   print('Current parsed version: $version');
-  print('Major: ${version.major}, Minor: ${version.minor}, Patch: ${version.patch}');
+  print(
+      'Major: ${version.major}, Minor: ${version.minor}, Patch: ${version.patch}');
   print('Pre-release: ${version.preRelease}, Build: ${version.build}');
 
   // Bump version segments programmatically
-  final nextMinor = version.bump('minor', incrementBuild: true, removeBuild: false);
+  final nextMinor =
+      version.bump('minor', incrementBuild: true, removeBuild: false);
   print('Next minor version: $nextMinor'); // 1.3.0+43
 
-  final nextBeta = version.bump('patch', incrementBuild: true, removeBuild: false, preReleaseLabel: 'beta');
+  final nextBeta = version.bump('patch',
+      incrementBuild: true, removeBuild: false, preReleaseLabel: 'beta');
   print('Next beta prerelease: $nextBeta'); // 1.2.3-beta.2+43
+
+  // Promote pre-release to stable release
+  final nextStable = version.promote(incrementBuild: true, removeBuild: false);
+  print('Promoted stable release: $nextStable'); // 1.2.3+43
 
   print('\n--- 3. Configuration Model ---');
   // Load or construct FVB configuration

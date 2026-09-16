@@ -37,12 +37,14 @@ class PubspecVersion {
     // Split by '-' to separate pre-release identifier
     final preParts = versionAndPre.split('-');
     final numbersPart = preParts[0];
-    final preReleasePart = preParts.length > 1 ? preParts.sublist(1).join('-') : null;
+    final preReleasePart =
+        preParts.length > 1 ? preParts.sublist(1).join('-') : null;
 
     // Parse major, minor, patch numbers
     final versionNumbers = numbersPart.split('.');
     if (versionNumbers.length < 3) {
-      throw FormatException('Invalid version format: "$versionStr". Expected X.Y.Z format.');
+      throw FormatException(
+          'Invalid version format: "$versionStr". Expected X.Y.Z format.');
     }
 
     final major = int.tryParse(versionNumbers[0]);
@@ -50,7 +52,8 @@ class PubspecVersion {
     final patch = int.tryParse(versionNumbers[2]);
 
     if (major == null || minor == null || patch == null) {
-      throw FormatException('Invalid integer version segments in: "$versionStr".');
+      throw FormatException(
+          'Invalid integer version segments in: "$versionStr".');
     }
 
     return PubspecVersion(
@@ -162,6 +165,34 @@ class PubspecVersion {
       minor: newMinor,
       patch: newPatch,
       preRelease: newPre,
+      build: newBuildStr,
+    );
+  }
+
+  /// Promotes a pre-release version to a stable release by removing the pre-release identifier
+  /// (e.g. 1.2.0-beta.1+2 -> 1.2.0+3).
+  PubspecVersion promote({
+    required bool incrementBuild,
+    int? explicitBuild,
+    required bool removeBuild,
+  }) {
+    String? newBuildStr;
+    if (!removeBuild) {
+      if (explicitBuild != null) {
+        newBuildStr = explicitBuild.toString();
+      } else if (incrementBuild) {
+        final currentBuildInt = build != null ? (int.tryParse(build!) ?? 0) : 0;
+        newBuildStr = (currentBuildInt + 1).toString();
+      } else {
+        newBuildStr = build;
+      }
+    }
+
+    return PubspecVersion(
+      major: major,
+      minor: minor,
+      patch: patch,
+      preRelease: null,
       build: newBuildStr,
     );
   }

@@ -9,17 +9,16 @@ ArgParser buildArgParser() {
         help: 'Which SemVer part to bump (major, minor, patch, build)')
     ..addOption('set',
         abbr: 's',
-        help: 'Explicitly set a full version string (e.g., 2.0.0, 2.0.0-beta.1+3)')
+        help:
+            'Explicitly set a full version string (e.g., 2.0.0, 2.0.0-beta.1+3)')
     ..addOption('build-number',
-        abbr: 'n',
-        help: 'Explicitly override the build number segment')
+        abbr: 'n', help: 'Explicitly override the build number segment')
     ..addFlag('keep-build',
         abbr: 'k',
         negatable: false,
         help: 'Keep the current build number instead of incrementing')
     ..addFlag('no-build',
-        negatable: false,
-        help: 'Completely remove the build number segment')
+        negatable: false, help: 'Completely remove the build number segment')
     ..addFlag('git',
         abbr: 'g',
         negatable: false,
@@ -30,14 +29,24 @@ ArgParser buildArgParser() {
         help: 'Automatically create a git tag for the new version')
     ..addFlag('git-push',
         negatable: false,
-        help: 'Automatically push committed changes and tags to git remote origin')
+        help:
+            'Automatically push committed changes and tags to git remote origin')
+    ..addFlag('allow-dirty',
+        negatable: false,
+        help:
+            'Allow Git operations even if there are uncommitted changes in the working tree')
     ..addOption('commit-msg',
         abbr: 'm',
         help: 'Commit message template (use {version} as placeholder)')
-    ..addOption('tag-prefix',
-        help: 'Git tag prefix')
+    ..addOption('tag-prefix', help: 'Git tag prefix')
     ..addOption('pre',
-        help: 'Specify pre-release label and transition to/increment prerelease (e.g. beta, rc)')
+        help:
+            'Specify pre-release label and transition to/increment prerelease (e.g. beta, rc)')
+    ..addFlag('release',
+        aliases: ['promote'],
+        negatable: false,
+        help:
+            'Promote a pre-release version to a stable release by removing pre-release identifier (e.g., 1.2.0-beta.1+2 -> 1.2.0+3)')
     ..addFlag('changelog',
         abbr: 'c',
         negatable: false,
@@ -54,20 +63,22 @@ ArgParser buildArgParser() {
         help: 'Remove an installed Git hook')
     ..addFlag('install-skill',
         negatable: false,
-        help: 'Install AI Agent SKILL.md into local project or global directory')
+        help:
+            'Install AI Agent SKILL.md into local project or global directory')
     ..addFlag('remove-skill',
         negatable: false,
-        help: 'Remove installed AI Agent SKILL.md from project or global directory')
+        help:
+            'Remove installed AI Agent SKILL.md from project or global directory')
     ..addFlag('global',
         negatable: false,
-        help: 'Target global home agent skills directory when installing/removing skill')
+        help:
+            'Target global home agent skills directory when installing/removing skill')
     ..addFlag('dry-run',
         abbr: 'd',
         negatable: false,
         help: 'Simulate changes without modifying files or git status')
     ..addOption('path',
-        abbr: 'p',
-        help: 'Custom path to pubspec.yaml or its parent directory')
+        abbr: 'p', help: 'Custom path to pubspec.yaml or its parent directory')
     ..addFlag('interactive',
         abbr: 'i',
         negatable: false,
@@ -77,8 +88,7 @@ ArgParser buildArgParser() {
         negatable: false,
         help: 'Mute all console outputs (errors will still print)')
     ..addFlag('json',
-        negatable: false,
-        help: 'Format output as a structured JSON string')
+        negatable: false, help: 'Format output as a structured JSON string')
     ..addFlag('help',
         abbr: 'h',
         negatable: false,

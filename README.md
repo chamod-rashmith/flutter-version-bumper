@@ -112,11 +112,11 @@ Run FVB in step-by-step interactive mode:
 fvb -i
 ```
 
-#### 📦 Full SemVer & Pre-releases
+##### 📦 Full SemVer & Pre-releases
 FVB supports pre-release suffixes (e.g., `-beta.1`, `-rc.3`) and build metadata:
 - **Start or Bump Pre-release**: `fvb --pre beta` starts or increments a `beta` prerelease track (e.g. `1.0.0` -> `1.0.1-beta.1+2` -> `1.0.1-beta.2+3`).
 - **Transition Pre-release Labels**: `fvb --pre rc` transitions the prerelease track (e.g. `1.0.1-beta.2+3` -> `1.0.1-rc.1+4`).
-- **Stable Promotion**: Promotes to stable track by running the standard bump command without the `--pre` flag (e.g., `1.0.1-rc.1+4` -> `1.0.2+5`).
+- **Release / Promote to Stable**: `fvb --release` (or `fvb --promote`) graduates a pre-release version to a stable release by removing the pre-release identifier and incrementing the build number (e.g., `1.2.0-beta.1+2` -> `1.2.0+3`).
 
 #### 🔢 Build Number Controls
 - **Keep Build Number**: `fvb --keep-build` (or `-k`) keeps the build number unchanged.
@@ -127,6 +127,7 @@ FVB supports pre-release suffixes (e.g., `-beta.1`, `-rc.3`) and build metadata:
 - **Commit changes**: `fvb -g` (automatically stages and commits the `pubspec.yaml` update).
 - **Commit and tag**: `fvb -g -t` (creates a Git tag for the new version).
 - **Commit, tag, and push**: `fvb --git-push` (stages, commits, and pushes changes to the remote origin tracking branch).
+- **Git Safety Guard**: By default, FVB aborts Git operations if uncommitted changes exist in the working directory. Pass `--allow-dirty` (or set `allow_dirty: true` in `.fvb.yaml`) to bypass this safety guard.
 - **Customize commit message**: `fvb -g -m "chore(release): bump version to {version}"`
 - **Customize tag prefix**: `fvb -t --tag-prefix "release-"`
 
@@ -157,9 +158,11 @@ fvb --help
 - `-g, --git`: Automatically commits the `pubspec.yaml` change.
 - `-t, --git-tag`: Automatically creates a Git tag for the new version.
 - `--git-push`: Automatically pushes committed changes and tags to the remote origin tracking branch.
+- `--allow-dirty`: Allows Git operations even if there are uncommitted changes in the working tree.
 - `-m, --commit-msg`: Commit message template (uses `{version}` as placeholder).
 - `--tag-prefix`: Custom Git tag prefix (defaults to `v`).
 - `--pre`: Specify pre-release label and transition to/increment prerelease track (e.g. beta, rc).
+- `--release`: Promote a pre-release version to a stable release by removing the pre-release identifier (alias: `--promote`).
 - `-c, --changelog`: Automatically updates `CHANGELOG.md` with a new release header.
 - `--changelog-msg`: Custom message/note for the `CHANGELOG.md` entry.
 - `--config-path`: Custom configuration YAML file path (`.fvb.yaml`).
