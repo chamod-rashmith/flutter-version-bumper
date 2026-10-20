@@ -2,12 +2,17 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import '../utils/logger.dart';
 
-/// Helper to handle updating CHANGELOG.md with release notes.
+/// A manager for maintaining and updating changelog release sections.
 class ChangelogUpdater {
   /// Creates a [ChangelogUpdater] instance.
   const ChangelogUpdater();
 
-  /// Resolves the absolute path to the target CHANGELOG.md file.
+  /// Resolves the canonical file path to the target CHANGELOG.md file.
+  ///
+  /// Derives the project directory from [pubspecPath]. If [customChangelogPath] is
+  /// provided, resolves it relative to the project directory or uses it directly
+  /// if already absolute. If [customChangelogPath] points to an existing directory,
+  /// appends `'CHANGELOG.md'` to the path.
   static String resolveChangelogPath(String pubspecPath,
       [String? customChangelogPath]) {
     final String projectDir = path.dirname(pubspecPath);
@@ -23,7 +28,21 @@ class ChangelogUpdater {
     return path.join(projectDir, 'CHANGELOG.md');
   }
 
-  /// Updates or creates CHANGELOG.md with a new version section.
+  /// Updates or creates a CHANGELOG.md file with an entry for [newVersion].
+  ///
+  /// Prepends a new Markdown release section with the current date directly beneath
+  /// the main `# Changelog` header if present, or at the top of the file.
+  /// Handles both Unix (`\n`) and Windows (`\r\n`) line endings safely.
+  ///
+  /// The [customMsg] specifies the bullet note for the version entry; defaults
+  /// to `"Bump version to $newVersion"` if omitted.
+  ///
+  /// If [dryRun] is `true`, prints the simulated changes without writing to disk.
+  /// If [quiet] is `true`, suppresses console output.
+  /// If [jsonMode] is `true`, routes logs to standard error.
+  ///
+  /// Returns `true` if the changelog was successfully updated (or simulated);
+  /// otherwise `false`.
   static bool updateChangelog({
     required String pubspecPath,
     required String newVersion,
@@ -60,13 +79,18 @@ class ChangelogUpdater {
             '# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n';
       }
 
-      // Prepend after title if "# Changelog" exists, otherwise prepend at top
+      // Prepend after title if "# Changelog" exists, otherwise prepend at top.
+      // Supports both LF (\n\n) and Windows CRLF (\r\n\r\n) line endings.
       String updatedContent;
       if (existingContent.startsWith('# Changelog')) {
-        final titleEndIndex = existingContent.indexOf('\n\n');
-        if (titleEndIndex != -1) {
-          final titlePart = existingContent.substring(0, titleEndIndex + 2);
-          final restPart = existingContent.substring(titleEndIndex + 2);
+        final match = RegExp(r'\r?\n\r?\n').firstMatch(existingContent);
+        if (match != null) {
+          final titleEndIndex = match.start;
+          final delimiterLength = match.group(0)!.length;
+          final titlePart =
+              existingContent.substring(0, titleEndIndex + delimiterLength);
+          final restPart =
+              existingContent.substring(titleEndIndex + delimiterLength);
           updatedContent = '$titlePart$newSection$restPart';
         } else {
           updatedContent = '$existingContent\n\n$newSection';

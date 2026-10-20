@@ -5,6 +5,8 @@
 .packages
 build/
 pubspec.lock
+doc/api/
+doc/
 
 # IDE specific files
 .idea/

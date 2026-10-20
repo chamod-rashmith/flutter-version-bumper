@@ -2,8 +2,9 @@ import 'package:flutter_version_bumper/flutter_version_bumper.dart';
 
 void main() {
   print('--- 1. Programmatic CLI Command Execution ---');
-  // You can execute FVB CLI commands directly from Dart code:
-  bumpVersion(['--dry-run', '--bump', 'patch']);
+  // You can execute FVB CLI commands directly from Dart code and inspect the returned POSIX exit code:
+  final statusCode = bumpVersion(['--dry-run', '--bump', 'patch']);
+  print('Exit code: $statusCode'); // ExitCode.success (0)
 
   print('\n--- 2. Direct Version Parsing & Bumping ---');
   // Parse a Semantic Version string

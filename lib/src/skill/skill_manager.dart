@@ -5,13 +5,26 @@ import 'package:path/path.dart' as path;
 import '../utils/logger.dart';
 import 'skill_content.dart';
 
-/// Manages installation and removal of AI Agent Skills for Flutter Version Bumper.
+/// A manager for installing and removing AI Agent skills for Flutter Version Bumper.
 class SkillManager {
   /// Name of the skill directory.
   static const String skillName = 'flutter-version-bumper';
 
-  /// Installs the AI Agent SKILL.md into local project skill directories
-  /// (`.agents/skills/` and `.skills/`) or global home directory if [global] is true.
+  /// Creates a [SkillManager] instance.
+  const SkillManager();
+
+  /// Installs the AI Agent SKILL.md into local or global agent directories.
+  ///
+  /// By default, installs into `.agents/skills/` and `.skills/` inside [targetDir].
+  /// If [global] is `true`, targets the user's home directory (`~/.agents/skills/`
+  /// and `~/.gemini/config/skills/`).
+  ///
+  /// The [customContent] can be provided to override [defaultSkillContent].
+  /// If [quiet] is `true`, suppresses installation logging.
+  /// If [jsonMode] is `true`, prints a structured JSON response to standard output.
+  ///
+  /// Returns `true` if installation succeeded; returns `false` if writing failed
+  /// or if the home directory could not be resolved.
   static bool installSkill({
     required String targetDir,
     bool global = false,
@@ -19,6 +32,13 @@ class SkillManager {
     bool jsonMode = false,
     String? customContent,
   }) {
+    if (global && _getHomeDir() == null) {
+      logError(
+          'Could not determine home directory (HOME or USERPROFILE environment variable not set).',
+          jsonMode);
+      return false;
+    }
+
     final content = customContent ?? defaultSkillContent;
     final List<File> targetFiles =
         _getTargetSkillFiles(targetDir, global: global);
@@ -58,13 +78,29 @@ class SkillManager {
     return true;
   }
 
-  /// Removes installed SKILL.md files from local project skill directories or global folder.
+  /// Removes installed SKILL.md files from project or global directories.
+  ///
+  /// Deletes the skill file and cleans up any empty parent skill directory.
+  /// If [global] is `true`, removes skills from the user's home directory.
+  ///
+  /// If [quiet] is `true`, suppresses output logs.
+  /// If [jsonMode] is `true`, prints a structured JSON response.
+  ///
+  /// Returns `true` if removal succeeded or if no skill files were found;
+  /// returns `false` if an error occurred during deletion.
   static bool removeSkill({
     required String targetDir,
     bool global = false,
     bool quiet = false,
     bool jsonMode = false,
   }) {
+    if (global && _getHomeDir() == null) {
+      logError(
+          'Could not determine home directory (HOME or USERPROFILE environment variable not set).',
+          jsonMode);
+      return false;
+    }
+
     final List<File> targetFiles =
         _getTargetSkillFiles(targetDir, global: global);
     final List<String> removedPaths = [];

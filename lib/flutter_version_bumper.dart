@@ -30,8 +30,19 @@ export 'src/models/pubspec_version.dart';
 export 'src/skill/skill_manager.dart';
 export 'src/utils/file_utils.dart' show versionRegex;
 
-/// Main entry point to process command-line arguments and perform the version bump.
-void bumpVersion(List<String> arguments) {
+/// Processes command-line arguments and performs the version bump.
+///
+/// Parses [arguments] to determine the target version segment, pre-release track,
+/// build number configuration, changelog entries, and Git automation preferences.
+///
+/// Returns a standard POSIX exit code:
+/// - [ExitCode.success] (`0`): The operation completed successfully.
+/// - [ExitCode.usage] (`64`): Command-line syntax or conflicting flag error.
+/// - [ExitCode.data] (`65`): Version string or SemVer parsing error.
+/// - [ExitCode.software] (`70`): Unhandled internal software error.
+/// - [ExitCode.ioError] (`74`): Filesystem read/write error.
+/// - [ExitCode.config] (`78`): Configuration file parsing error.
+int bumpVersion(List<String> arguments) {
   final parser = buildArgParser();
 
   final processedArgs = <String>[];
@@ -57,23 +68,23 @@ void bumpVersion(List<String> arguments) {
     argResults = parser.parse(processedArgs);
   } catch (e) {
     printError('Argument parsing error: ${e.toString()}');
-    exit(ExitCode.usage.code);
+    return ExitCode.usage.code;
   }
 
-  if (argResults['help'] as bool) {
+  if (argResults.flag('help')) {
     printHelp(parser);
-    return;
+    return ExitCode.success.code;
   }
 
-  final quiet = argResults['quiet'] as bool;
-  final jsonMode = argResults['json'] as bool;
-  final dryRun = argResults['dry-run'] as bool;
-  final isGlobal = argResults['global'] as bool;
-  final customPath = argResults['path'] as String?;
-  final configPath = argResults['config-path'] as String?;
+  final quiet = argResults.flag('quiet');
+  final jsonMode = argResults.flag('json');
+  final dryRun = argResults.flag('dry-run');
+  final isGlobal = argResults.flag('global');
+  final customPath = argResults.option('path');
+  final configPath = argResults.option('config-path');
 
   // Handle Agent Skill command flags if specified
-  final installSkill = argResults['install-skill'] as bool;
+  final installSkill = argResults.flag('install-skill');
   if (installSkill) {
     final targetDir =
         customPath != null ? path.dirname(customPath) : Directory.current.path;
@@ -83,11 +94,11 @@ void bumpVersion(List<String> arguments) {
       quiet: quiet,
       jsonMode: jsonMode,
     );
-    if (!ok) exit(ExitCode.ioError.code);
-    return;
+    if (!ok) return ExitCode.ioError.code;
+    return ExitCode.success.code;
   }
 
-  final removeSkill = argResults['remove-skill'] as bool;
+  final removeSkill = argResults.flag('remove-skill');
   if (removeSkill) {
     final targetDir =
         customPath != null ? path.dirname(customPath) : Directory.current.path;
@@ -97,14 +108,14 @@ void bumpVersion(List<String> arguments) {
       quiet: quiet,
       jsonMode: jsonMode,
     );
-    if (!ok) exit(ExitCode.ioError.code);
-    return;
+    if (!ok) return ExitCode.ioError.code;
+    return ExitCode.success.code;
   }
 
   final pubspecFile = resolvePubspecFile(customPath);
 
   // Handle Git Hook command flags if specified
-  final installHookType = argResults['install-hook'] as String?;
+  final installHookType = argResults.option('install-hook');
   if (installHookType != null) {
     final projectDir = path.dirname(pubspecFile.path);
     final ok = GitHooksManager.installHook(
@@ -113,11 +124,11 @@ void bumpVersion(List<String> arguments) {
       quiet: quiet,
       jsonMode: jsonMode,
     );
-    if (!ok) exit(ExitCode.ioError.code);
-    return;
+    if (!ok) return ExitCode.ioError.code;
+    return ExitCode.success.code;
   }
 
-  final removeHookType = argResults['remove-hook'] as String?;
+  final removeHookType = argResults.option('remove-hook');
   if (removeHookType != null) {
     final projectDir = path.dirname(pubspecFile.path);
     final ok = GitHooksManager.removeHook(
@@ -126,13 +137,13 @@ void bumpVersion(List<String> arguments) {
       quiet: quiet,
       jsonMode: jsonMode,
     );
-    if (!ok) exit(ExitCode.ioError.code);
-    return;
+    if (!ok) return ExitCode.ioError.code;
+    return ExitCode.success.code;
   }
 
   if (configPath != null && !File(configPath).existsSync()) {
     logError('Configuration file not found at: $configPath', jsonMode);
-    exit(ExitCode.config.code);
+    return ExitCode.config.code;
   }
 
   // Load configuration from file (.fvb.yaml / pubspec.yaml)
@@ -142,65 +153,65 @@ void bumpVersion(List<String> arguments) {
         configPath: configPath, targetPubspecPath: pubspecFile.path);
   } catch (e) {
     logError(e.toString(), jsonMode);
-    exit(ExitCode.config.code);
+    return ExitCode.config.code;
   }
 
   final keepBuild =
-      (argResults['keep-build'] as bool) || (config.keepBuild ?? false);
+      argResults.flag('keep-build') || (config.keepBuild ?? false);
   final removeBuild =
-      (argResults['no-build'] as bool) || (config.noBuild ?? false);
-  final runGit = (argResults['git'] as bool) || (config.git ?? false);
-  final runGitTag = (argResults['git-tag'] as bool) || (config.gitTag ?? false);
+      argResults.flag('no-build') || (config.noBuild ?? false);
+  final runGit = argResults.flag('git') || (config.git ?? false);
+  final runGitTag = argResults.flag('git-tag') || (config.gitTag ?? false);
   final runGitPush =
-      (argResults['git-push'] as bool) || (config.gitPush ?? false);
+      argResults.flag('git-push') || (config.gitPush ?? false);
   final allowDirty =
-      (argResults['allow-dirty'] as bool) || (config.allowDirty ?? false);
+      argResults.flag('allow-dirty') || (config.allowDirty ?? false);
 
   final cliReleaseParsed = argResults.wasParsed('release');
   final cliBumpParsed = argResults.wasParsed('bump');
   final cliSetParsed = argResults.wasParsed('set');
 
-  final commitMsg = (argResults['commit-msg'] as String?) ??
+  final commitMsg = argResults.option('commit-msg') ??
       config.commitMsg ??
       'chore: bump version to {version}';
   final tagPrefix =
-      (argResults['tag-prefix'] as String?) ?? config.tagPrefix ?? 'v';
+      argResults.option('tag-prefix') ?? config.tagPrefix ?? 'v';
 
   final runChangelog =
-      (argResults['changelog'] as bool) || (config.changelog ?? false);
+      argResults.flag('changelog') || (config.changelog ?? false);
   final changelogMsg =
-      (argResults['changelog-msg'] as String?) ?? config.changelogMsg;
+      argResults.option('changelog-msg') ?? config.changelogMsg;
 
-  final interactive = argResults['interactive'] as bool;
-  final preReleaseLabel = argResults['pre'] as String?;
+  final interactive = argResults.flag('interactive');
+  final preReleaseLabel = argResults.option('pre');
 
   if (cliReleaseParsed && preReleaseLabel != null) {
     logError('Cannot use --release/--promote together with --pre.', jsonMode);
-    exit(ExitCode.usage.code);
+    return ExitCode.usage.code;
   }
 
   if (cliReleaseParsed && cliBumpParsed) {
     logError(
         'Cannot use --release/--promote together with -b/--bump.', jsonMode);
-    exit(ExitCode.usage.code);
+    return ExitCode.usage.code;
   }
 
   if (cliReleaseParsed && cliSetParsed) {
     logError(
         'Cannot use --release/--promote together with -s/--set.', jsonMode);
-    exit(ExitCode.usage.code);
+    return ExitCode.usage.code;
   }
 
   if (argResults.wasParsed('keep-build') && argResults.wasParsed('no-build')) {
     logError('Cannot use --keep-build together with --no-build.', jsonMode);
-    exit(ExitCode.usage.code);
+    return ExitCode.usage.code;
   }
 
   if (argResults.wasParsed('build-number') &&
       argResults.wasParsed('no-build')) {
     logError(
         'Cannot use -n/--build-number together with --no-build.', jsonMode);
-    exit(ExitCode.usage.code);
+    return ExitCode.usage.code;
   }
 
   final isRelease = cliReleaseParsed ||
@@ -210,15 +221,16 @@ void bumpVersion(List<String> arguments) {
           (config.release ?? false));
 
   int? explicitBuild;
-  if (argResults['build-number'] != null) {
-    explicitBuild = int.tryParse(argResults['build-number'] as String);
+  final buildNumberOpt = argResults.option('build-number');
+  if (buildNumberOpt != null) {
+    explicitBuild = int.tryParse(buildNumberOpt);
     if (explicitBuild == null) {
       logError('build-number must be a valid integer.', jsonMode);
-      exit(ExitCode.usage.code);
+      return ExitCode.usage.code;
     }
     if (explicitBuild < 0) {
       logError('build-number must be a valid non-negative integer.', jsonMode);
-      exit(ExitCode.usage.code);
+      return ExitCode.usage.code;
     }
   }
 
@@ -226,7 +238,7 @@ void bumpVersion(List<String> arguments) {
     logError(
         'pubspec.yaml not found at: ${pubspecFile.path}. Make sure the path is correct.',
         jsonMode);
-    exit(ExitCode.ioError.code);
+    return ExitCode.ioError.code;
   }
 
   String content;
@@ -234,7 +246,7 @@ void bumpVersion(List<String> arguments) {
     content = pubspecFile.readAsStringSync();
   } catch (e) {
     logError('Failed to read pubspec.yaml: ${e.toString()}', jsonMode);
-    exit(ExitCode.ioError.code);
+    return ExitCode.ioError.code;
   }
 
   final match = versionRegex.firstMatch(content);
@@ -242,7 +254,7 @@ void bumpVersion(List<String> arguments) {
     logError(
         'Could not parse version line in pubspec.yaml.\nExpected format matches: "version: X.Y.Z" or "version: X.Y.Z+W"',
         jsonMode);
-    exit(ExitCode.data.code);
+    return ExitCode.data.code;
   }
 
   final String oldVersionStr = match.group(1)!;
@@ -253,7 +265,7 @@ void bumpVersion(List<String> arguments) {
     logError(
         'Failed to parse current version "$oldVersionStr": ${e.toString()}',
         jsonMode);
-    exit(ExitCode.data.code);
+    return ExitCode.data.code;
   }
 
   logInfo('Current version: $currentVersion', quiet, jsonMode,
@@ -267,10 +279,10 @@ void bumpVersion(List<String> arguments) {
           runInteractive(currentVersion, keepBuild, explicitBuild, removeBuild);
     } catch (e) {
       logError('Interactive mode error: ${e.toString()}', jsonMode);
-      exit(ExitCode.software.code);
+      return ExitCode.software.code;
     }
   } else {
-    final setVer = argResults['set'] as String?;
+    final setVer = argResults.option('set');
     if (setVer != null) {
       try {
         final parsedSet = PubspecVersion.parse(setVer);
@@ -302,7 +314,7 @@ void bumpVersion(List<String> arguments) {
       } catch (e) {
         logError(
             'Failed to parse set version string: ${e.toString()}', jsonMode);
-        exit(ExitCode.data.code);
+        return ExitCode.data.code;
       }
     } else if (isRelease) {
       if (currentVersion.preRelease == null) {
@@ -317,8 +329,7 @@ void bumpVersion(List<String> arguments) {
         removeBuild: removeBuild,
       );
     } else {
-      final bumpType =
-          (argResults['bump'] as String?) ?? config.bump ?? 'patch';
+      final bumpType = argResults.option('bump') ?? config.bump ?? 'patch';
       targetVersion = currentVersion.bump(
         bumpType,
         incrementBuild: !keepBuild,
@@ -342,7 +353,7 @@ void bumpVersion(List<String> arguments) {
     } catch (e) {
       logError(
           'Failed to write changes to pubspec.yaml: ${e.toString()}', jsonMode);
-      exit(ExitCode.ioError.code);
+      return ExitCode.ioError.code;
     }
     logInfo('\n[OK] pubspec.yaml updated: $currentVersion -> $newFullStr',
         quiet, jsonMode,
@@ -414,4 +425,6 @@ void bumpVersion(List<String> arguments) {
     };
     print(json.encode(jsonResult));
   }
+
+  return ExitCode.success.code;
 }

@@ -1,7 +1,22 @@
 import 'dart:io';
 import 'package:args/args.dart';
 
-/// Print formatted CLI usage instructions.
+/// Whether the standard output stream supports ANSI escape color codes.
+bool get useAnsi =>
+    stdout.hasTerminal &&
+    stdout.supportsAnsiEscapes &&
+    !Platform.environment.containsKey('NO_COLOR');
+
+/// Whether the standard error stream supports ANSI escape color codes.
+bool get useAnsiErr =>
+    stderr.hasTerminal &&
+    stderr.supportsAnsiEscapes &&
+    !Platform.environment.containsKey('NO_COLOR');
+
+/// Prints formatted CLI usage instructions and command recipes.
+///
+/// Writes available flags, option descriptions, and examples configured
+/// in [parser] to [stdout].
 void printHelp(ArgParser parser) {
   print('🚀 Flutter Version Bumper (FVB)');
   print('A lightning-fast tool to automate versioning in Flutter projects.');
@@ -24,12 +39,18 @@ void printHelp(ArgParser parser) {
   print('  fvb -i                     # Runs interactive selection CLI menu');
 }
 
-/// Output informative messages.
+/// Outputs an informational message to the console.
+///
+/// If [jsonMode] is `true`, writes [msg] to [stderr] to avoid contaminating
+/// the machine-readable [stdout] JSON stream.
+///
+/// If [quiet] is `true`, the message is suppressed. If [colorCode] is specified
+/// and [useAnsi] is `true`, colorizes the message before outputting.
 void logInfo(String msg, bool quiet, bool jsonMode, {String? colorCode}) {
   if (jsonMode) {
     stderr.writeln(msg);
   } else if (!quiet) {
-    if (colorCode != null) {
+    if (colorCode != null && useAnsi) {
       print('$colorCode$msg\x1B[0m');
     } else {
       print(msg);
@@ -37,25 +58,45 @@ void logInfo(String msg, bool quiet, bool jsonMode, {String? colorCode}) {
   }
 }
 
-/// Output warning logs.
+/// Outputs a warning message to standard error.
+///
+/// If [quiet] is `true` and [jsonMode] is `false`, the warning is suppressed.
+/// If [useAnsiErr] is `true`, colorizes the warning with yellow ANSI escape codes.
 void logWarning(String msg, bool quiet, bool jsonMode) {
   if (jsonMode) {
     stderr.writeln('\x1B[33m[Warning] $msg\x1B[0m');
   } else if (!quiet) {
-    print('\x1B[33m[Warning] $msg\x1B[0m');
+    if (useAnsiErr) {
+      stderr.writeln('\x1B[33m[Warning] $msg\x1B[0m');
+    } else {
+      stderr.writeln('[Warning] $msg');
+    }
   }
 }
 
-/// Output error messages.
+/// Outputs an error message to standard error.
+///
+/// Always writes to [stderr]. If [useAnsiErr] is `true` and [jsonMode] is `false`,
+/// colorizes the error with red ANSI escape codes.
 void logError(String msg, bool jsonMode) {
   if (jsonMode) {
     stderr.writeln('\x1B[31mERROR: $msg\x1B[0m');
   } else {
-    print('\x1B[31mERROR: $msg\x1B[0m');
+    if (useAnsiErr) {
+      stderr.writeln('\x1B[31mERROR: $msg\x1B[0m');
+    } else {
+      stderr.writeln('ERROR: $msg');
+    }
   }
 }
 
-/// Standard print error function.
+/// Prints an error message directly to standard error.
+///
+/// Always formats the output prefixed with `ERROR:` and writes to [stderr].
 void printError(String msg) {
-  print('\x1B[31mERROR: $msg\x1B[0m');
+  if (useAnsiErr) {
+    stderr.writeln('\x1B[31mERROR: $msg\x1B[0m');
+  } else {
+    stderr.writeln('ERROR: $msg');
+  }
 }

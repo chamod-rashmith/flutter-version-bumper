@@ -3,8 +3,11 @@ import 'package:path/path.dart' as path;
 import 'package:yaml/yaml.dart';
 
 /// Configuration options loaded from `.fvb.yaml` or `pubspec.yaml` (`fvb:` section).
+///
+/// Holds persistent project defaults for version bumping, Git automation, changelog
+/// updates, and safety checks.
 class FvbConfig {
-  /// Default bump segment ('major', 'minor', 'patch', 'build').
+  /// The default bump segment (`'major'`, `'minor'`, `'patch'`, or `'build'`).
   final String? bump;
 
   /// Whether to keep current build number instead of incrementing.
@@ -13,7 +16,7 @@ class FvbConfig {
   /// Whether to remove build number segment entirely.
   final bool? noBuild;
 
-  /// Whether to commit pubspec.yaml and CHANGELOG.md automatically.
+  /// Whether to commit `pubspec.yaml` and `CHANGELOG.md` automatically.
   final bool? git;
 
   /// Whether to create a Git tag automatically.
@@ -28,22 +31,22 @@ class FvbConfig {
   /// Whether to promote a pre-release version to a stable release.
   final bool? release;
 
-  /// Custom commit message template (e.g., "chore: release {version}").
+  /// The custom commit message template (e.g., `"chore: release {version}"`).
   final String? commitMsg;
 
-  /// Tag prefix for Git tags (e.g., "v").
+  /// The tag prefix for Git tags (e.g., `"v"`).
   final String? tagPrefix;
 
-  /// Whether to automatically update CHANGELOG.md.
+  /// Whether to automatically update `CHANGELOG.md`.
   final bool? changelog;
 
-  /// Custom path to CHANGELOG.md file or directory.
+  /// The custom path to the `CHANGELOG.md` file or directory.
   final String? changelogPath;
 
-  /// Custom entry message for CHANGELOG.md release notes.
+  /// The custom entry message for `CHANGELOG.md` release notes.
   final String? changelogMsg;
 
-  /// Creates an [FvbConfig] instance with specified configuration options.
+  /// Creates an [FvbConfig] instance with the specified configuration options.
   FvbConfig({
     this.bump,
     this.keepBuild,
@@ -60,7 +63,13 @@ class FvbConfig {
     this.changelogMsg,
   });
 
-  /// Loads configuration from explicit custom path, `.fvb.yaml`, or `pubspec.yaml` (`fvb:` section).
+  /// Loads configuration from an explicit custom path, `.fvb.yaml`, or `pubspec.yaml`.
+  ///
+  /// Searches first at [configPath] (or `.fvb.yaml` in the directory of [targetPubspecPath]),
+  /// then falls back to the `fvb:` mapping inside the target `pubspec.yaml`.
+  ///
+  /// Throws a [FormatException] if an explicit [configPath] contains invalid YAML
+  /// or cannot be parsed.
   static FvbConfig load(
       {String? configPath, required String targetPubspecPath}) {
     final String projectDir = path.dirname(targetPubspecPath);
@@ -110,6 +119,8 @@ class FvbConfig {
   }
 
   /// Creates an [FvbConfig] instance from a parsed YAML map.
+  ///
+  /// Supports `snake_case`, `camelCase`, and `kebab-case` configuration keys.
   factory FvbConfig.fromYaml(YamlMap map) {
     return FvbConfig(
       bump: map['bump'] as String?,

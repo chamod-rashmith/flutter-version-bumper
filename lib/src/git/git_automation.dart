@@ -3,7 +3,19 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import '../utils/logger.dart';
 
-/// Runs standard Git commit, tagging, and push commands.
+/// Executes Git operations for committing, tagging, and pushing version changes.
+///
+/// Stages the `pubspec.yaml` located at [pubspecPath] and an optional [changelogPath].
+/// If [doCommit] is `true`, creates a Git commit formatted with [commitMsgTemplate].
+/// If [doTag] is `true`, creates an annotated Git tag with [tagPrefix] prepended to [version].
+/// If [doPush] is `true`, pushes the current branch (`HEAD`) and tags to remote origin.
+///
+/// If [allowDirty] is `false`, aborts Git operations if uncommitted changes exist
+/// in the working directory outside of the versioned files.
+/// If [dryRun] is `true`, simulates Git commands without mutating the repository.
+///
+/// Returns a map indicating execution status:
+/// `{'committed': bool, 'tagged': bool, 'pushed': bool}`.
 Map<String, bool> runGitAutomation({
   required String pubspecPath,
   required String version,
@@ -145,7 +157,10 @@ Map<String, bool> runGitAutomation({
   return {'committed': committed, 'tagged': tagged, 'pushed': pushed};
 }
 
-/// Safe Git environment check helper.
+/// Checks whether the specified [workingDirectory] is inside a Git repository.
+///
+/// Executes `git rev-parse --is-inside-work-tree` within [workingDirectory]
+/// and returns `true` if the process exits with status 0.
 bool isGitRepository(String workingDirectory) {
   try {
     final result = Process.runSync(
@@ -157,8 +172,13 @@ bool isGitRepository(String workingDirectory) {
   }
 }
 
-/// Checks for uncommitted changes in the Git working tree.
-/// Returns a list of dirty file paths.
+/// Retrieves a list of uncommitted file paths in the Git working tree.
+///
+/// Parses the output of `git status --porcelain` in [workingDirectory].
+/// When [doCommit] is `true`, ignores changes made to [pubspecPath] and
+/// [changelogPath] since those are intended to be committed by FVB.
+///
+/// Returns a list of relative paths for all dirty files found.
 List<String> getUncommittedChanges(
   String workingDirectory, {
   String? pubspecPath,
@@ -230,7 +250,7 @@ List<String> getUncommittedChanges(
   }
 }
 
-/// Helper to check if two file paths resolve to the same underlying file.
+/// Checks whether two file paths resolve to the same underlying file on disk.
 bool _isSamePath(String path1, String path2) {
   final abs1 = path.canonicalize(path.absolute(path1));
   final abs2 = path.canonicalize(path.absolute(path2));

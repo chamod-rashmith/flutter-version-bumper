@@ -25,14 +25,14 @@ void main() {
       final res =
           Process.runSync('dart', ['bin/fvb.dart', '--completely-unknown-arg']);
       expect(res.exitCode, equals(ExitCode.usage.code));
-      expect(res.stdout.toString(), contains('ERROR: Argument parsing error'));
+      expect(res.stderr.toString(), contains('ERROR: Argument parsing error'));
     });
 
     test('ExitCode.usage.code (64) for invalid build-number', () {
       final res = Process.runSync('dart',
           ['bin/fvb.dart', '-p', pubspecFile.path, '-n', 'not-a-number']);
       expect(res.exitCode, equals(ExitCode.usage.code));
-      expect(res.stdout.toString(),
+      expect(res.stderr.toString(),
           contains('build-number must be a valid integer'));
     });
 
@@ -47,7 +47,7 @@ void main() {
         'beta'
       ]);
       expect(res.exitCode, equals(ExitCode.usage.code));
-      expect(res.stdout.toString(),
+      expect(res.stderr.toString(),
           contains('Cannot use --release/--promote together with --pre'));
     });
 
@@ -55,7 +55,7 @@ void main() {
       final res = Process.runSync('dart',
           ['bin/fvb.dart', '-p', pubspecFile.path, '--release', '-b', 'minor']);
       expect(res.exitCode, equals(ExitCode.usage.code));
-      expect(res.stdout.toString(),
+      expect(res.stderr.toString(),
           contains('Cannot use --release/--promote together with -b/--bump'));
     });
 
@@ -63,7 +63,7 @@ void main() {
       final res = Process.runSync('dart',
           ['bin/fvb.dart', '-p', pubspecFile.path, '--release', '-s', '2.0.0']);
       expect(res.exitCode, equals(ExitCode.usage.code));
-      expect(res.stdout.toString(),
+      expect(res.stderr.toString(),
           contains('Cannot use --release/--promote together with -s/--set'));
     });
 
@@ -77,7 +77,7 @@ void main() {
         '--no-build'
       ]);
       expect(res.exitCode, equals(ExitCode.usage.code));
-      expect(res.stdout.toString(),
+      expect(res.stderr.toString(),
           contains('Cannot use --keep-build together with --no-build'));
     });
 
@@ -87,7 +87,7 @@ void main() {
       final res = Process.runSync('dart',
           ['bin/fvb.dart', '-p', pubspecFile.path, '-n', '42', '--no-build']);
       expect(res.exitCode, equals(ExitCode.usage.code));
-      expect(res.stdout.toString(),
+      expect(res.stderr.toString(),
           contains('Cannot use -n/--build-number together with --no-build'));
     });
 
@@ -95,7 +95,7 @@ void main() {
       final res = Process.runSync(
           'dart', ['bin/fvb.dart', '-p', pubspecFile.path, '-n', '-1']);
       expect(res.exitCode, equals(ExitCode.usage.code));
-      expect(res.stdout.toString(),
+      expect(res.stderr.toString(),
           contains('build-number must be a valid non-negative integer'));
     });
 
@@ -109,7 +109,7 @@ void main() {
         nonExistentConfig
       ]);
       expect(res.exitCode, equals(ExitCode.config.code));
-      expect(res.stdout.toString(), contains('Configuration file not found'));
+      expect(res.stderr.toString(), contains('Configuration file not found'));
     });
 
     test('ExitCode.config.code (78) for malformed YAML in explicit config-path',
@@ -124,7 +124,7 @@ void main() {
         malformedConfig
       ]);
       expect(res.exitCode, equals(ExitCode.config.code));
-      expect(res.stdout.toString(),
+      expect(res.stderr.toString(),
           contains('Failed to parse configuration file'));
     });
 
@@ -134,7 +134,7 @@ void main() {
       final res =
           Process.runSync('dart', ['bin/fvb.dart', '-p', nonExistentPubspec]);
       expect(res.exitCode, equals(ExitCode.ioError.code));
-      expect(res.stdout.toString(), contains('pubspec.yaml not found'));
+      expect(res.stderr.toString(), contains('pubspec.yaml not found'));
     });
 
     test('ExitCode.data.code (65) for invalid version in pubspec.yaml', () {
@@ -144,7 +144,7 @@ void main() {
           Process.runSync('dart', ['bin/fvb.dart', '-p', pubspecFile.path]);
       expect(res.exitCode, equals(ExitCode.data.code));
       expect(
-          res.stdout.toString(), contains('Failed to parse current version'));
+          res.stderr.toString(), contains('Failed to parse current version'));
     });
 
     test('ExitCode.data.code (65) for invalid version in -s/--set argument',
@@ -152,7 +152,7 @@ void main() {
       final res = Process.runSync('dart',
           ['bin/fvb.dart', '-p', pubspecFile.path, '-s', 'bad.version']);
       expect(res.exitCode, equals(ExitCode.data.code));
-      expect(res.stdout.toString(),
+      expect(res.stderr.toString(),
           contains('Failed to parse set version string'));
     });
 

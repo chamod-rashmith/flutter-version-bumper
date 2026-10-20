@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.6.0] - 2026-10-21
+
+### Fixed
+- **Git Hook Auto-Discovery**:
+  - Fixed hardcoded `bin/fvb.dart` path in generated Git pre-commit hooks. Hooks now seamlessly detect the global `fvb` binary in `PATH`, local repository scripts, or globally activated packages via `dart pub global run`.
+- **Windows CRLF Line Ending Support**:
+  - Resolved an issue in `ChangelogUpdater` where CRLF (`\r\n\r\n`) line endings prevented correct detection of header boundaries, ensuring clean release note insertion across Windows and Unix platforms.
+- **POSIX Diagnostic Stream Routing**:
+  - Redirected all error and warning messages to `stderr` instead of `stdout`, preventing stream pollution and guaranteeing valid JSON parsing when piped (`--json`).
+- **Terminal Escape Sequence Guards**:
+  - Added terminal capability detection (`stdout.hasTerminal`, `supportsAnsiEscapes`) and `NO_COLOR` environment variable checks before emitting ANSI escape sequences.
+- **Global Skill Directory Validation**:
+  - Added guards to verify `HOME` and `USERPROFILE` environment variables during global AI Agent Skill deployment.
+
+### Changed & Improved
+- **Non-Destructive Library Execution**:
+  - Refactored `bumpVersion` to return standard POSIX integer exit codes (`ExitCode.success.code`, `ExitCode.usage.code`, etc.) instead of calling `exit()` directly within library code. Allows safe in-memory programmatic execution and unit testing without process termination.
+- **Entrypoint Modernization**:
+  - Streamlined `bin/fvb.dart` by removing legacy `Chain.capture` custom Zones in favor of native Dart 3 async stack trace preservation and terse error trace output.
+- **Modern Dart 3 Features**:
+  - Implemented Dart 3 pattern matching list destructuring in `PubspecVersion.parse` and concise switch expressions for segment bumping.
+- **Type-Safe Option Parsing**:
+  - Upgraded to `package:args` 2.5+ type-safe accessors (`argResults.flag(...)` and `argResults.option(...)`).
+- **Deep API Documentation (Effective Dart)**:
+  - Comprehensive documentation overhaul across all public classes, methods, and properties strictly following `dart-write-documentation` guidelines with 100% resolution in `dart doc`.
+
+### Added
+- Unit and integration tests for Windows CRLF changelog updates and in-memory exit code returns (78 passing tests total).
+
 ## [1.5.0] - 2026-09-16
 
 ### Added

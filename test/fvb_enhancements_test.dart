@@ -48,6 +48,27 @@ void main() {
       expect(content, contains('## [1.0.1+2]'));
     });
 
+    test('updates existing CHANGELOG.md with CRLF Windows line endings', () {
+      final changelogFile = File(path.join(tempDir.path, 'CHANGELOG.md'));
+      changelogFile.writeAsStringSync('# Changelog\r\n\r\nInitial CRLF notes.\r\n');
+
+      final status = bumpVersion([
+        '-p',
+        pubspecFile.path,
+        '-c',
+        '--changelog-msg',
+        'CRLF release notes support'
+      ]);
+
+      expect(status, equals(ExitCode.success.code));
+      final content = changelogFile.readAsStringSync();
+      expect(content, contains('## [1.0.1+2]'));
+      expect(content, contains('- CRLF release notes support'));
+      expect(content, contains('Initial CRLF notes.'));
+      // Verify section is placed before initial notes
+      expect(content.indexOf('## [1.0.1+2]'), lessThan(content.indexOf('Initial CRLF notes.')));
+    });
+
     test('dry run does not modify CHANGELOG.md on disk', () {
       final changelogFile = File(path.join(tempDir.path, 'CHANGELOG.md'));
       changelogFile.writeAsStringSync('# Changelog\n');
@@ -116,6 +137,24 @@ fvb:
 
       bumpVersion(['-p', pubspecFile.path, '--remove-hook', 'pre-commit']);
       expect(hookFile.existsSync(), isFalse);
+    });
+  });
+
+  group('In-Memory Exit Code & Return Tests', () {
+    test('bumpVersion returns ExitCode.usage.code on unknown argument in-memory', () {
+      final code = bumpVersion(['--unknown-arg']);
+      expect(code, equals(ExitCode.usage.code));
+    });
+
+    test('bumpVersion returns ExitCode.success.code on successful bump', () {
+      final code = bumpVersion(['-p', pubspecFile.path, '-q']);
+      expect(code, equals(ExitCode.success.code));
+      expect(pubspecFile.readAsStringSync(), contains('version: 1.0.1+2'));
+    });
+
+    test('bumpVersion returns ExitCode.ioError.code for missing pubspec', () {
+      final code = bumpVersion(['-p', 'non_existent_dir/pubspec.yaml', '-q']);
+      expect(code, equals(ExitCode.ioError.code));
     });
   });
 }

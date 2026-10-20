@@ -1,7 +1,15 @@
 import 'dart:io';
 import '../models/pubspec_version.dart';
 
-/// Provides a standard terminal-based selection flow.
+/// Runs a terminal-based interactive selection prompt for version bumping.
+///
+/// Prompts the user with previews for patch, minor, major, build, and promotion
+/// increments based on [current].
+///
+/// The [keepBuild], [explicitBuild], and [removeBuild] flags dictate how the
+/// build number segment is handled across the choices.
+///
+/// Throws a [StateError] if the standard input stream is unavailable or closed.
 PubspecVersion runInteractive(PubspecVersion current, bool keepBuild,
     int? explicitBuild, bool removeBuild) {
   print('🚀 \x1B[36mFlutter Version Bumper - Interactive Mode\x1B[0m');

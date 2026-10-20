@@ -84,7 +84,7 @@ fvb:
 Now, simply running `fvb` will automatically commit, tag, update changelogs, and push!
 
 #### 🪝 Git Hooks Integration
-Install pre-commit hooks to validate pubspec version updates before every commit:
+Install pre-commit hooks to validate pubspec version updates before every commit. The installed hook automatically discovers `fvb` in your PATH, globally activated packages, or local scripts:
 ```bash
 fvb --install-hook pre-commit
 ```
@@ -140,6 +140,26 @@ FVB supports pre-release suffixes (e.g., `-beta.1`, `-rc.3`) and build metadata:
 #### 🤖 Quiet & JSON (CI/CD Pipelines)
 - Output raw JSON details: `fvb --json`
 - Suppress normal CLI output: `fvb -q`
+- Diagnostic logs and errors are strictly routed to `stderr`, keeping `stdout` pure and stream-safe for automated parsing tools (e.g. `jq`).
+
+#### 💻 Programmatic Dart API Usage
+FVB can be imported directly into other Dart tools, scripts, or build utilities without spawning OS subprocesses:
+```dart
+import 'package:flutter_version_bumper/flutter_version_bumper.dart';
+
+void main() {
+  // Execute FVB commands in-memory and inspect standard POSIX exit codes:
+  final exitCode = bumpVersion(['--bump', 'minor', '--changelog', '--dry-run']);
+  if (exitCode == ExitCode.success.code) {
+    print('Version bump simulation succeeded!');
+  }
+
+  // Parse and manipulate Semantic Versions directly with Dart 3 pattern matching:
+  final version = PubspecVersion.parse('1.2.0-beta.1+42');
+  final nextStable = version.promote(incrementBuild: true, removeBuild: false);
+  print(nextStable); // 1.2.0+43
+}
+```
 
 ---
 
@@ -205,21 +225,6 @@ jobs:
 
       - name: Bump, Tag, Update Changelog and Push
         run: fvb -t -c --git-push # Automates the entire release pipeline
-```
-
----
-
-## 🤖 AI Coding Agent Skill Support
-
-FVB comes with native **AI Coding Agent Skill** integration (`SKILL.md`) designed for autonomous agents (e.g. Antigravity, Gemini, Cursor, Windsurf, Claude Code).
-
-Agents or developers can install the skill with a single command:
-```bash
-# Project installation (.agents/skills/flutter-version-bumper/SKILL.md)
-fvb --install-skill
-
-# Global installation (~/.agents/skills/flutter-version-bumper/SKILL.md)
-fvb --install-skill --global
 ```
 
 ---

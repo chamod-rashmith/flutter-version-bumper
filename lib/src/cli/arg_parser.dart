@@ -1,6 +1,11 @@
 import 'package:args/args.dart';
 
 /// Configures and returns the standard CLI argument parser for FVB.
+///
+/// Registers flags and options for SemVer bumping (`--bump`, `--set`, `--pre`,
+/// `--release`), build number manipulation (`--keep-build`, `--no-build`,
+/// `--build-number`), Git automation (`--git`, `--git-tag`, `--git-push`),
+/// changelog maintenance, and AI skill installation.
 ArgParser buildArgParser() {
   return ArgParser()
     ..addOption('bump',
