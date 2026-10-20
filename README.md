@@ -256,9 +256,17 @@ lib/
 
 ---
 
+## 🗺️ Roadmap
+
+Curious about what's coming next? Check out our [ROADMAP.md](ROADMAP.md) for planned features, upcoming milestones (Rollback Engine, Conventional Changelogs, CI/CD audits), and estimated release versions.
+
+---
+
 ## 🤝 Contributing
 
-Contributions are welcome! If you have ideas for features, feel free to open an issue or submit a Pull Request.
+Contributions are welcome! If you want to contribute, please check out our [Contributing Guidelines](CONTRIBUTING.md) for development setup, code standards, and PR workflows.
+
+Feel free to open an issue or submit a Pull Request!
 
 ---
 
