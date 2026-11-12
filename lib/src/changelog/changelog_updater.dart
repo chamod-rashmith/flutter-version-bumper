@@ -79,21 +79,44 @@ class ChangelogUpdater {
             '# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n';
       }
 
-      // Prepend after title if "# Changelog" exists, otherwise prepend at top.
-      // Supports both LF (\n\n) and Windows CRLF (\r\n\r\n) line endings.
+      // Case-insensitive check for '# Changelog' header and release sections.
       String updatedContent;
-      if (existingContent.startsWith('# Changelog')) {
-        final match = RegExp(r'\r?\n\r?\n').firstMatch(existingContent);
-        if (match != null) {
-          final titleEndIndex = match.start;
-          final delimiterLength = match.group(0)!.length;
-          final titlePart =
-              existingContent.substring(0, titleEndIndex + delimiterLength);
-          final restPart =
-              existingContent.substring(titleEndIndex + delimiterLength);
-          updatedContent = '$titlePart$newSection$restPart';
+      final releaseSectionMatch =
+          RegExp(r'^\s*##\s+', multiLine: true).firstMatch(existingContent);
+
+      if (releaseSectionMatch != null) {
+        // If release sections already exist, insert before the first release section
+        // to preserve the title and preamble description above it.
+        final insertIndex = releaseSectionMatch.start;
+        final beforePart = existingContent.substring(0, insertIndex);
+        final afterPart = existingContent.substring(insertIndex);
+        updatedContent = '$beforePart$newSection$afterPart';
+      } else if (RegExp(r'^#\s+Changelog', caseSensitive: false)
+          .hasMatch(existingContent)) {
+        // No release sections yet. If a preamble/introductory description exists (e.g. "All notable changes"),
+        // insert the new section after the preamble. Otherwise insert after the title header.
+        final preambleMatch = RegExp(
+                r'^(#\s+Changelog[^\r\n]*\r?\n(?:\s*\r?\n)?(?:All notable changes[^\r\n]*\r?\n(?:\s*\r?\n)?)?)',
+                caseSensitive: false)
+            .firstMatch(existingContent);
+
+        if (preambleMatch != null) {
+          final headerPart = preambleMatch.group(1)!;
+          final restPart = existingContent.substring(headerPart.length);
+          updatedContent = '$headerPart$newSection$restPart';
         } else {
-          updatedContent = '$existingContent\n\n$newSection';
+          final match = RegExp(r'\r?\n\r?\n').firstMatch(existingContent);
+          if (match != null) {
+            final titleEndIndex = match.start;
+            final delimiterLength = match.group(0)!.length;
+            final titlePart =
+                existingContent.substring(0, titleEndIndex + delimiterLength);
+            final restPart =
+                existingContent.substring(titleEndIndex + delimiterLength);
+            updatedContent = '$titlePart$newSection$restPart';
+          } else {
+            updatedContent = '$existingContent\n\n$newSection';
+          }
         }
       } else {
         updatedContent = '$newSection$existingContent';

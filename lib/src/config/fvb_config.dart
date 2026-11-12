@@ -96,6 +96,8 @@ class FvbConfig {
         if (configPath != null) {
           throw FormatException(
               'Failed to parse configuration file at "$configPath": ${e.toString()}');
+        } else {
+          stderr.writeln('[Warning] Failed to parse .fvb.yaml: ${e.toString()}');
         }
       }
     }

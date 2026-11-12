@@ -83,11 +83,17 @@ int bumpVersion(List<String> arguments) {
   final customPath = argResults.option('path');
   final configPath = argResults.option('config-path');
 
+  // Helper to resolve project directory from customPath (supports both directory or pubspec.yaml path)
+  String resolveTargetDirectory(String? customPath) {
+    if (customPath == null) return Directory.current.path;
+    final abs = path.canonicalize(path.absolute(customPath));
+    return FileSystemEntity.isDirectorySync(abs) ? abs : path.dirname(abs);
+  }
+
   // Handle Agent Skill command flags if specified
   final installSkill = argResults.flag('install-skill');
   if (installSkill) {
-    final targetDir =
-        customPath != null ? path.dirname(customPath) : Directory.current.path;
+    final targetDir = resolveTargetDirectory(customPath);
     final ok = SkillManager.installSkill(
       targetDir: targetDir,
       global: isGlobal,
@@ -100,8 +106,7 @@ int bumpVersion(List<String> arguments) {
 
   final removeSkill = argResults.flag('remove-skill');
   if (removeSkill) {
-    final targetDir =
-        customPath != null ? path.dirname(customPath) : Directory.current.path;
+    final targetDir = resolveTargetDirectory(customPath);
     final ok = SkillManager.removeSkill(
       targetDir: targetDir,
       global: isGlobal,

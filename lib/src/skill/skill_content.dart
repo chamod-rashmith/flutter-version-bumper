@@ -105,6 +105,10 @@ Follow this reliable 4-step loop when executing version tasks:
   ```bash
   fvb --pre rc
   ```
+* **Transition Pre-Release Track with Segment Bump (e.g. Beta to RC with Minor increment)**: `1.0.1-beta.1+2` -> `1.1.0-rc.1+3`
+  ```bash
+  fvb -b minor --pre rc
+  ```
 * **Promote Pre-Release to Stable Release**: `1.0.1-rc.1+3` -> `1.0.1+4`
   ```bash
   fvb --release
@@ -129,6 +133,7 @@ Follow this reliable 4-step loop when executing version tasks:
   ```bash
   fvb --no-build
   ```
+* **Quoted Version Compatibility**: FVB seamlessly supports unquoted, double-quoted (`"1.0.0+1"`), and single-quoted (`'1.0.0+1'`) versions in `pubspec.yaml`.
 
 ### 4. Automated CHANGELOG Maintenance
 * **Prepend Version Section to CHANGELOG.md**:
@@ -145,6 +150,13 @@ Follow this reliable 4-step loop when executing version tasks:
   ```bash
   fvb -b minor -c --changelog-msg "Release v1.2.0" -g -t --git-push
   ```
+* **Create Release Tag**:
+  ```bash
+  # Commit and create annotated release tag:
+  fvb -g -t
+  # Or create release tag alone without separate commit:
+  fvb -t
+  ```
 * **Custom Commit Message & Tag Prefix**:
   ```bash
   fvb -g -t -m "release: v{version}" --tag-prefix "v"
@@ -157,13 +169,17 @@ Follow this reliable 4-step loop when executing version tasks:
   ```
 
 ### 6. Git Hooks & Agent Skill Management
-* **Install Pre-Commit Hook**: Validates `pubspec.yaml` version before every commit.
+* **Install Pre-Commit or Pre-Push Hook**: Automatically validates `pubspec.yaml` version before commits or pushes. Any existing hook is safely backed up to `<hook>.fvb-backup`:
   ```bash
   fvb --install-hook pre-commit
+  # or pre-push:
+  fvb --install-hook pre-push
   ```
 * **Install Agent Skill into Repository**:
   ```bash
   fvb --install-skill
+  # or target a specific project directory:
+  fvb -p /path/to/project --install-skill
   ```
 
 ---

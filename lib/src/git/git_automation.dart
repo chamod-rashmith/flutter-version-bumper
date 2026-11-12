@@ -223,7 +223,7 @@ List<String> getUncommittedChanges(
         filePath = filePath.substring(1, filePath.length - 1);
       }
 
-      if (doCommit && pubspecPath != null) {
+      if (pubspecPath != null) {
         final fullPath1 = repoRoot != null
             ? path.join(repoRoot, filePath)
             : path.join(workingDirectory, filePath);
