@@ -148,5 +148,10 @@ void main() {
       bumpVersion(['-p', pubspecFile.path, '-s', '5.0.0', '-q']);
       expect(pubspecFile.readAsStringSync(), contains('version: 5.0.0+2'));
     });
+
+    test('--version outputs package version and exit code 0', () {
+      final code = bumpVersion(['--version']);
+      expect(code, equals(ExitCode.success.code));
+    });
   });
 }

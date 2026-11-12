@@ -82,7 +82,7 @@ class TransactionSnapshot {
         timestamp: json['timestamp'] as String? ?? '',
       );
 
-  /// Creates a copy of this snapshot with updated Git references.
+  /// Creates a copy of this snapshot with the given fields replaced with new values.
   TransactionSnapshot copyWith({
     String? previousVersion,
     String? newVersion,

@@ -22,6 +22,7 @@ import 'src/skill/skill_manager.dart';
 import 'src/transaction/transaction_manager.dart';
 import 'src/utils/file_utils.dart';
 import 'src/utils/logger.dart';
+import 'src/version.dart';
 
 export 'package:io/io.dart' show ExitCode;
 export 'src/changelog/changelog_updater.dart';
@@ -33,6 +34,7 @@ export 'src/transaction/rollback_step.dart';
 export 'src/transaction/transaction_manager.dart';
 export 'src/transaction/transaction_snapshot.dart';
 export 'src/utils/file_utils.dart' show versionRegex;
+export 'src/version.dart' show packageVersion;
 
 /// Processes command-line arguments and performs the version bump.
 ///
@@ -76,12 +78,21 @@ int bumpVersion(List<String> arguments) {
   try {
     argResults = parser.parse(processedArgs);
   } catch (e) {
-    printError('Argument parsing error: ${e.toString()}');
+    printError('Argument parsing error: ${e.toString()}\n\n${parser.usage}');
     return ExitCode.usage.code;
   }
 
   if (argResults.flag('help')) {
     printHelp(parser);
+    return ExitCode.success.code;
+  }
+
+  if (argResults.flag('version')) {
+    if (argResults.flag('json')) {
+      print(json.encode({'version': packageVersion}));
+    } else {
+      print('flutter_version_bumper version: $packageVersion');
+    }
     return ExitCode.success.code;
   }
 

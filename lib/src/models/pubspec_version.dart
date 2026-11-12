@@ -45,17 +45,19 @@ class PubspecVersion {
       }
     }
 
-    // Split by '+' to separate build number/metadata
-    final mainParts = cleaned.split('+');
-    final versionAndPre = mainParts[0];
-    final buildPart =
-        mainParts.length > 1 ? mainParts.sublist(1).join('+') : null;
+    // Split by '+' to separate build number/metadata using pattern matching
+    final (versionAndPre, buildPart) = switch (cleaned.split('+')) {
+      [final v, ...final b] when b.isNotEmpty => (v, b.join('+')),
+      [final v, ...] => (v, null),
+      _ => (cleaned, null),
+    };
 
-    // Split by '-' to separate pre-release identifier
-    final preParts = versionAndPre.split('-');
-    final numbersPart = preParts[0];
-    final preReleasePart =
-        preParts.length > 1 ? preParts.sublist(1).join('-') : null;
+    // Split by '-' to separate pre-release identifier using pattern matching
+    final (numbersPart, preReleasePart) = switch (versionAndPre.split('-')) {
+      [final n, ...final p] when p.isNotEmpty => (n, p.join('-')),
+      [final n, ...] => (n, null),
+      _ => (versionAndPre, null),
+    };
 
     // Parse major, minor, patch numbers using Dart 3 pattern matching
     final (major, minor, patch) = switch (numbersPart.split('.')) {
@@ -244,7 +246,7 @@ class PubspecVersion {
     );
   }
 
-  /// Returns standard SemVer formatted version string (e.g., `"1.2.3-beta.1+45"`).
+  /// Returns a standard SemVer formatted version string (e.g., `"1.2.3-beta.1+45"`).
   @override
   String toString() {
     final sb = StringBuffer('$major.$minor.$patch');

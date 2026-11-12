@@ -7,7 +7,7 @@ import 'skill_content.dart';
 
 /// A manager for installing and removing AI Agent skills for Flutter Version Bumper.
 class SkillManager {
-  /// Name of the skill directory.
+  /// The name of the skill directory.
   static const String skillName = 'flutter-version-bumper';
 
   /// Creates a [SkillManager] instance.
@@ -152,7 +152,7 @@ class SkillManager {
     return true;
   }
 
-  /// Resolves the list of target SKILL.md files for given directory or global mode.
+  /// Resolves the list of target SKILL.md files for the given [targetDir] or [global] mode.
   static List<File> _getTargetSkillFiles(String targetDir,
       {required bool global}) {
     if (global) {
@@ -171,7 +171,7 @@ class SkillManager {
     }
   }
 
-  /// Helper to get user's home directory across platform environments.
+  /// Resolves the user's home directory across platform environments.
   static String? _getHomeDir() {
     return Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
   }

@@ -61,7 +61,12 @@ Map<String, bool> runGitAutomation({
         'Aborting Git operations. Commit or stash your changes, or use --allow-dirty to bypass.',
         jsonMode,
       );
-      return {'committed': false, 'tagged': false, 'pushed': false};
+      return {
+        'committed': false,
+        'tagged': false,
+        'pushed': false,
+        'success': false,
+      };
     }
   }
 
@@ -237,7 +242,7 @@ Map<String, bool> runGitAutomation({
 /// Checks whether the specified [workingDirectory] is inside a Git repository.
 ///
 /// Executes `git rev-parse --is-inside-work-tree` within [workingDirectory]
-/// and returns `true` if the process exits with status 0.
+/// and returns `true` if the process exits with status `0`.
 bool isGitRepository(String workingDirectory) {
   try {
     final result = Process.runSync(

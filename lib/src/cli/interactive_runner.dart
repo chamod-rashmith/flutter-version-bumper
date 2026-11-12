@@ -1,5 +1,6 @@
 import 'dart:io';
 import '../models/pubspec_version.dart';
+import '../utils/logger.dart';
 
 /// Runs a terminal-based interactive selection prompt for version bumping.
 ///
@@ -12,8 +13,13 @@ import '../models/pubspec_version.dart';
 /// Throws a [StateError] if the standard input stream is unavailable or closed.
 PubspecVersion runInteractive(PubspecVersion current, bool keepBuild,
     int? explicitBuild, bool removeBuild) {
-  print('🚀 \x1B[36mFlutter Version Bumper - Interactive Mode\x1B[0m');
-  print('Current Version: \x1B[33m$current\x1B[0m\n');
+  String cyan(String text) => useAnsi ? '\x1B[36m$text\x1B[0m' : text;
+  String yellow(String text) => useAnsi ? '\x1B[33m$text\x1B[0m' : text;
+  String green(String text) => useAnsi ? '\x1B[32m$text\x1B[0m' : text;
+  String red(String text) => useAnsiErr ? '\x1B[31m$text\x1B[0m' : text;
+
+  print('🚀 ${cyan("Flutter Version Bumper - Interactive Mode")}');
+  print('Current Version: ${yellow(current.toString())}\n');
   print('Select the part to bump:');
 
   final patchPreview = current.bump('patch',
@@ -41,12 +47,13 @@ PubspecVersion runInteractive(PubspecVersion current, bool keepBuild,
       : null;
 
   if (releasePreview != null) {
-    print('  0. Promote to Stable Release (-> \x1B[32m$releasePreview\x1B[0m)');
+    print(
+        '  0. Promote to Stable Release (-> ${green(releasePreview.toString())})');
   }
-  print('  1. Patch  (-> \x1B[32m$patchPreview\x1B[0m)');
-  print('  2. Minor  (-> \x1B[32m$minorPreview\x1B[0m)');
-  print('  3. Major  (-> \x1B[32m$majorPreview\x1B[0m)');
-  print('  4. Build  (-> \x1B[32m$buildPreview\x1B[0m)');
+  print('  1. Patch  (-> ${green(patchPreview.toString())})');
+  print('  2. Minor  (-> ${green(minorPreview.toString())})');
+  print('  3. Major  (-> ${green(majorPreview.toString())})');
+  print('  4. Build  (-> ${green(buildPreview.toString())})');
   print('  5. Custom Version String');
 
   int nullAttempts = 0;
@@ -80,7 +87,7 @@ PubspecVersion runInteractive(PubspecVersion current, bool keepBuild,
               'No standard input stream. Cannot run in interactive mode.');
         }
         if (customStr.isEmpty) {
-          print('\x1B[31mVersion cannot be empty.\x1B[0m');
+          stderr.writeln(red('Version cannot be empty.'));
           continue;
         }
         try {
@@ -107,11 +114,11 @@ PubspecVersion runInteractive(PubspecVersion current, bool keepBuild,
             build: finalBuild,
           );
         } catch (e) {
-          print('\x1B[31mError: ${e.toString()}\x1B[0m');
+          stderr.writeln(red('Error: ${e.toString()}'));
         }
       }
     }
-    print(
-        '\x1B[31mInvalid choice. Please select ${releasePreview != null ? "0, " : ""}1, 2, 3, 4, or 5.\x1B[0m');
+    stderr.writeln(red(
+        'Invalid choice. Please select ${releasePreview != null ? "0, " : ""}1, 2, 3, 4, or 5.'));
   }
 }

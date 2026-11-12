@@ -104,6 +104,8 @@ ArgParser buildArgParser() {
             'Automatically roll back all changes if any stage of the release fails')
     ..addFlag('no-rollback',
         negatable: false, help: 'Disable automatic rollback on failure')
+    ..addFlag('version',
+        negatable: false, help: 'Print the current FVB tool version')
     ..addFlag('help',
         abbr: 'h',
         negatable: false,

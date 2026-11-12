@@ -105,14 +105,14 @@ class TransactionManager {
     );
   }
 
-  /// Records the Git commit SHA created during this version bump transaction.
+  /// Records the Git commit SHA [commitSha] created during this version bump transaction.
   void recordGitCommit(String commitSha) {
     if (_snapshot != null) {
       _snapshot = _snapshot!.copyWith(createdGitCommit: commitSha);
     }
   }
 
-  /// Records the Git tag name created during this version bump transaction.
+  /// Records the Git tag name [tagName] created during this version bump transaction.
   void recordGitTag(String tagName) {
     if (_snapshot != null) {
       _snapshot = _snapshot!.copyWith(createdGitTag: tagName);
@@ -160,7 +160,7 @@ class TransactionManager {
 
   /// Executes all registered rollback steps in LIFO order to revert changes cleanly.
   ///
-  /// Returns `true` if rollback succeeded.
+  /// Returns `true` if the rollback succeeded; otherwise `false`.
   bool rollback() {
     if (_steps.isEmpty) return true;
 
@@ -197,7 +197,12 @@ class TransactionManager {
 
   /// Manually reverts the most recent local version bump from a saved backup snapshot.
   ///
-  /// Returns `true` if a transaction snapshot was found and successfully restored.
+  /// Restores `pubspec.yaml`, `CHANGELOG.md`, and reverts local Git commits/tags
+  /// in [projectDir]. If [quiet] is `true`, suppresses progress messages.
+  /// If [jsonMode] is `true`, error diagnostics are routed to standard error.
+  ///
+  /// Returns `true` if a transaction snapshot was found and successfully restored;
+  /// otherwise `false`.
   static bool performManualRollback({
     required String projectDir,
     required bool quiet,
