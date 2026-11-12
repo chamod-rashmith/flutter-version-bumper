@@ -120,5 +120,25 @@ void main() {
       final exitCode = bumpVersion(['-p', pubspecFile.path, '--dry-run', '--json', '--quiet']);
       expect(exitCode, equals(ExitCode.success.code));
     });
+
+    test('BUG 9: PubspecVersion.bump throws ArgumentError on unknown bumpType even with preReleaseLabel', () {
+      final v = PubspecVersion.parse('1.0.0-beta.1');
+      expect(() => v.bump('invalid_bump', incrementBuild: false, removeBuild: false, preReleaseLabel: 'beta'),
+          throwsArgumentError);
+      expect(() => v.bump('invalid_bump', incrementBuild: false, removeBuild: false, preReleaseLabel: 'rc'),
+          throwsArgumentError);
+    });
+
+    test('BUG 10: PubspecVersion.parse preserves multi-plus build metadata', () {
+      final v = PubspecVersion.parse('1.0.0+build.1+sha.abc');
+      expect(v.build, equals('build.1+sha.abc'));
+    });
+
+    test('BUG 11: Malformed .fvb.yaml in project dir prints warning and falls back gracefully', () {
+      final dotFvb = File(path.join(tempDir.path, '.fvb.yaml'));
+      dotFvb.writeAsStringSync('fvb: invalid_yaml: [unclosed');
+      final config = FvbConfig.load(targetPubspecPath: pubspecFile.path);
+      expect(config.bump, isNull);
+    });
   });
 }
