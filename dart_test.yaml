@@ -1,0 +1,3 @@
+# Dart Test Configuration for cross-platform stability
+# Avoid concurrent process/file-lock collisions across test suites on Windows
+concurrency: 1

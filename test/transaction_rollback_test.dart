@@ -485,7 +485,9 @@ void main() {
           File(path.join(tempDir.path, '.git', 'hooks', 'pre-commit'));
       hookFile.parent.createSync(recursive: true);
       hookFile.writeAsStringSync('#!/bin/sh\nexit 1\n');
-      Process.runSync('chmod', ['+x', hookFile.path]);
+      if (!Platform.isWindows) {
+        Process.runSync('chmod', ['+x', hookFile.path]);
+      }
 
       // Version bump with Git commit should be rejected by hook and rolled back
       final code = bumpVersion([
