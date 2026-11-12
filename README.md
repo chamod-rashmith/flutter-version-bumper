@@ -1,5 +1,6 @@
 # 🚀 Flutter Version Bumper (FVB)
 
+[![Pub Version](https://img.shields.io/pub/v/flutter_version_bumper.svg)](https://pub.dev/packages/flutter_version_bumper)
 [![Dart CLI](https://img.shields.io/badge/Dart-CLI-0175C2.svg)](https://dart.dev)
 [![Flutter](https://img.shields.io/badge/Flutter-All-02569B.svg)](https://flutter.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -33,12 +34,17 @@ Before installing, ensure you have the following requirements:
 
 Install the tool globally using Dart's package manager to make the `fvb` command available everywhere on your machine.
 
-### **Method 1: From GitHub (Recommended)**
+### **Method 1: From pub.dev (Recommended)**
+```bash
+dart pub global activate flutter_version_bumper
+```
+
+### **Method 2: From GitHub (Bleeding Edge)**
 ```bash
 dart pub global activate --source git https://github.com/chamod-rashmith/flutter-version-bumper
 ```
 
-### **Method 2: Locally (For Development)**
+### **Method 3: Locally (For Development)**
 If you've cloned the repository, run this from the root folder:
 ```bash
 dart pub global activate --source path .
@@ -55,10 +61,12 @@ By default, running `fvb` without arguments increments the **patch** version.
 
 | Command | Before | After | Action |
 | :--- | :--- | :--- | :--- |
-| `fvb` | `1.0.0+1` | `1.0.1+2` | Patch increment |
+| `fvb` | `1.0.0+1` | `1.0.1+2` | Patch increment (default) |
 | `fvb -b minor` | `1.0.1+2` | `1.1.0+3` | Minor increment |
 | `fvb -b major` | `1.1.0+3` | `2.0.0+4` | Major increment |
-| `fvb -b build` | `2.0.0+4` | `2.0.0+5` | Only Build increment |
+| `fvb -b build` | `2.0.0+4` | `2.0.0+5` | Only build number increment |
+| `fvb -b minor -k` | `1.0.0+1` | `1.1.0+1` | Minor without build increment |
+| `fvb --no-build` | `1.0.0+1` | `1.0.1` | Patch with build segment removed |
 
 ---
 
@@ -67,7 +75,11 @@ By default, running `fvb` without arguments increments the **patch** version.
 #### 📝 Automated `CHANGELOG.md` Updates
 Automatically append release notes to `CHANGELOG.md`:
 ```bash
+# Append release notes to default CHANGELOG.md:
 fvb -c --changelog-msg "Fixed login authentication bug"
+
+# Update a custom CHANGELOG.md path:
+fvb -c --changelog-path docs/CHANGELOG.md --changelog-msg "Fixed login authentication bug"
 ```
 
 #### ⚙️ Config File Support (`.fvb.yaml` / `pubspec.yaml`)
@@ -81,15 +93,19 @@ fvb:
   tag_prefix: "v"
   commit_msg: "chore(release): bump version to {version}"
   changelog: true
+  changelog_path: "CHANGELOG.md"
+  rollback_on_failure: true
 ```
 Now, simply running `fvb` will automatically commit, tag, update changelogs, and push!
 
 #### 🪝 Git Hooks Integration
-Install pre-commit hooks to validate pubspec version updates before every commit. The installed hook automatically discovers `fvb` in your PATH, globally activated packages, or local scripts:
+Install executable Git hooks to validate pubspec version updates before every commit or push. Any existing hook is safely backed up to `<hook>.fvb-backup`:
 ```bash
+# Install pre-commit hook (or pre-push)
 fvb --install-hook pre-commit
+fvb --install-hook pre-push
 ```
-To remove installed hooks:
+To remove installed hooks and restore the developer's original pre-existing hook:
 ```bash
 fvb --remove-hook pre-commit
 ```
@@ -134,11 +150,12 @@ FVB supports pre-release suffixes (e.g., `-beta.1`, `-rc.3`) and build metadata:
 - **Keep Build Number**: `fvb --keep-build` (or `-k`) keeps the build number unchanged.
 - **Explicit Build Number**: `fvb -n 42` overrides the build number to `42`.
 - **Remove Build Number**: `fvb --no-build` strips the build number entirely (e.g., `1.0.0`).
+- *(Note: `--keep-build` and `-n/--build-number` are mutually exclusive).*
 
 #### 🐙 Git Automation
 - **Commit changes**: `fvb -g` (automatically stages and commits the `pubspec.yaml` update).
 - **Commit and tag**: `fvb -g -t` (creates a Git tag for the new version).
-- **Commit, tag, and push**: `fvb --git-push` (stages, commits, and pushes changes to the remote origin tracking branch).
+- **Commit, tag, and push**: `fvb -g -t --git-push` (stages, commits, tags, and pushes changes to the remote origin tracking branch).
 - **Git Safety Guard**: By default, FVB aborts Git operations if uncommitted changes exist in the working directory. Pass `--allow-dirty` (or set `allow_dirty: true` in `.fvb.yaml`) to bypass this safety guard.
 - **Customize commit message**: `fvb -g -m "chore(release): bump version to {version}"`
 - **Customize tag prefix**: `fvb -t --tag-prefix "release-"`
@@ -196,10 +213,11 @@ fvb --help
 - `--pre`: Specify pre-release label and transition to/increment prerelease track (e.g. beta, rc).
 - `--release`: Promote a pre-release version to a stable release by removing the pre-release identifier (alias: `--promote`).
 - `-c, --changelog`: Automatically updates `CHANGELOG.md` with a new release header.
+- `--changelog-path`: Custom path to `CHANGELOG.md` file or directory.
 - `--changelog-msg`: Custom message/note for the `CHANGELOG.md` entry.
 - `--config-path`: Custom configuration YAML file path (`.fvb.yaml`).
 - `--install-hook`: Install an executable Git hook (`pre-commit` or `pre-push`).
-- `--remove-hook`: Remove an installed Git hook.
+- `--remove-hook`: Remove an installed Git hook and restore any original backed-up hook (`.fvb-backup`).
 - `--install-skill`: Install AI Agent `SKILL.md` into local project or global directory.
 - `--remove-skill`: Remove installed AI Agent `SKILL.md` from project or global directory.
 - `--global`: Target global home agent skills directory when installing/removing skill.
@@ -211,6 +229,7 @@ fvb --help
 - `--rollback`: Rolls back the most recent local version bump transaction.
 - `--[no-]rollback-on-failure`: Automatically roll back all changes if any stage of the release fails (default: on).
 - `--no-rollback`: Disables automatic rollback on failure.
+- `--version`: Prints the current FVB tool version.
 - `-h, --help`: Displays the help menu.
 
 ---
@@ -239,7 +258,7 @@ jobs:
           git config --local user.name "GitHub Action"
 
       - name: Bump, Tag, Update Changelog and Push
-        run: fvb -t -c --git-push # Automates the entire release pipeline
+        run: fvb -g -t -c --git-push # Automates the entire release pipeline
 ```
 
 ---
