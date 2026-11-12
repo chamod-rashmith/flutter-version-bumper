@@ -57,6 +57,8 @@ ArgParser buildArgParser() {
         abbr: 'c',
         negatable: false,
         help: 'Automatically update CHANGELOG.md with a new release section')
+    ..addOption('changelog-path',
+        help: 'Custom path to CHANGELOG.md file or directory')
     ..addOption('changelog-msg',
         help: 'Custom message/note for the CHANGELOG.md entry')
     ..addOption('config-path',

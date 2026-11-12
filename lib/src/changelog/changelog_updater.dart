@@ -91,35 +91,44 @@ class ChangelogUpdater {
         final beforePart = existingContent.substring(0, insertIndex);
         final afterPart = existingContent.substring(insertIndex);
         updatedContent = '$beforePart$newSection$afterPart';
-      } else if (RegExp(r'^#\s+Changelog', caseSensitive: false)
-          .hasMatch(existingContent)) {
-        // No release sections yet. If a preamble/introductory description exists (e.g. "All notable changes"),
-        // insert the new section after the preamble. Otherwise insert after the title header.
-        final preambleMatch = RegExp(
-                r'^(#\s+Changelog[^\r\n]*\r?\n(?:\s*\r?\n)?(?:All notable changes[^\r\n]*\r?\n(?:\s*\r?\n)?)?)',
-                caseSensitive: false)
+      } else {
+        final changelogHeaderMatch = RegExp(r'^[ \t]*#\s+Changelog[^\r\n]*',
+                caseSensitive: false, multiLine: true)
             .firstMatch(existingContent);
 
-        if (preambleMatch != null) {
-          final headerPart = preambleMatch.group(1)!;
-          final restPart = existingContent.substring(headerPart.length);
-          updatedContent = '$headerPart$newSection$restPart';
-        } else {
-          final match = RegExp(r'\r?\n\r?\n').firstMatch(existingContent);
-          if (match != null) {
-            final titleEndIndex = match.start;
-            final delimiterLength = match.group(0)!.length;
-            final titlePart =
-                existingContent.substring(0, titleEndIndex + delimiterLength);
-            final restPart =
-                existingContent.substring(titleEndIndex + delimiterLength);
-            updatedContent = '$titlePart$newSection$restPart';
+        if (changelogHeaderMatch != null) {
+          // No release sections yet. If a preamble/introductory description exists (e.g. "All notable changes"),
+          // insert the new section after the preamble. Otherwise insert after the title header.
+          final headerStart = changelogHeaderMatch.start;
+          final afterHeader = existingContent.substring(headerStart);
+          final preambleMatch = RegExp(
+                  r'^([ \t]*#\s+Changelog[^\r\n]*(?:\r?\n)+(?:All notable changes[^\r\n]*(?:\r?\n)+)?)',
+                  caseSensitive: false)
+              .firstMatch(afterHeader);
+
+          if (preambleMatch != null) {
+            final insertIndex = headerStart + preambleMatch.group(1)!.length;
+            final beforePart = existingContent.substring(0, insertIndex);
+            final restPart = existingContent.substring(insertIndex);
+            final separator =
+                (beforePart.endsWith('\n\n') || beforePart.endsWith('\r\n\r\n'))
+                    ? ''
+                    : (beforePart.endsWith('\r\n') ? '\r\n' : '\n');
+            updatedContent = '$beforePart$separator$newSection$restPart';
           } else {
-            updatedContent = '$existingContent\n\n$newSection';
+            final insertIndex = changelogHeaderMatch.end;
+            final beforePart = existingContent.substring(0, insertIndex);
+            final restPart = existingContent.substring(insertIndex);
+            updatedContent = '$beforePart\n\n$newSection$restPart';
+          }
+        } else {
+          if (existingContent.trim().isEmpty) {
+            updatedContent =
+                '# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n$newSection';
+          } else {
+            updatedContent = '$newSection$existingContent';
           }
         }
-      } else {
-        updatedContent = '$newSection$existingContent';
       }
 
       changelogFile.writeAsStringSync(updatedContent);

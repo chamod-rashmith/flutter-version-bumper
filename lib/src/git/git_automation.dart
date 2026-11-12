@@ -43,7 +43,7 @@ Map<String, bool> runGitAutomation({
       'committed': false,
       'tagged': false,
       'pushed': false,
-      'success': false
+      'success': true,
     };
   }
 

@@ -260,14 +260,30 @@ class TransactionManager {
       } catch (_) {}
     }
 
-    // 2. Revert Git commit if created and initial Git HEAD is known
-    if (snapshot.initialGitHead != null) {
+    // 2. Revert Git commit only if FVB actually created one during this transaction
+    if (snapshot.createdGitCommit != null && snapshot.initialGitHead != null) {
       try {
-        Process.runSync(
+        final headRes = Process.runSync(
           'git',
-          ['reset', '--soft', snapshot.initialGitHead!],
+          ['rev-parse', 'HEAD'],
           workingDirectory: projectDir,
         );
+        final currentHead =
+            headRes.exitCode == 0 ? (headRes.stdout as String).trim() : null;
+        if (currentHead == snapshot.createdGitCommit) {
+          // Use mixed reset to move HEAD back and unstage changes cleanly
+          Process.runSync(
+            'git',
+            ['reset', snapshot.initialGitHead!],
+            workingDirectory: projectDir,
+          );
+        } else {
+          logWarning(
+            'Current Git HEAD ($currentHead) differs from release commit (${snapshot.createdGitCommit}). Skipping Git commit reset to prevent data loss.',
+            quiet,
+            jsonMode,
+          );
+        }
       } catch (_) {}
     }
 
@@ -295,6 +311,16 @@ class TransactionManager {
       );
       return false;
     }
+
+    // Unstage any restored files to ensure clean index and working tree
+    try {
+      Process.runSync('git', ['reset', 'HEAD', snapshot.pubspecPath],
+          workingDirectory: projectDir);
+      if (snapshot.changelogPath != null) {
+        Process.runSync('git', ['reset', 'HEAD', snapshot.changelogPath!],
+            workingDirectory: projectDir);
+      }
+    } catch (_) {}
 
     // Clean up backup file
     try {

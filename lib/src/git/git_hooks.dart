@@ -83,7 +83,8 @@ echo "✅ FVB check passed."
   /// Removes an installed Git hook from the project.
   ///
   /// Locates and deletes the hook file matching [hookType] from `.git/hooks/`
-  /// inside [projectDir].
+  /// inside [projectDir]. If a previously backed up hook (`<hookType>.fvb-backup`)
+  /// exists, restores it to the original hook path.
   ///
   /// Returns `true` if the hook was successfully removed or was not present;
   /// returns `false` if an error occurred while attempting removal.
@@ -94,14 +95,35 @@ echo "✅ FVB check passed."
     required bool jsonMode,
   }) {
     final hookFile = File(path.join(projectDir, '.git', 'hooks', hookType));
+    final backupFile = File('${hookFile.path}.fvb-backup');
+
     if (hookFile.existsSync()) {
       try {
         hookFile.deleteSync();
         logInfo('[Git Hook] Removed $hookType hook.', quiet, jsonMode,
             colorCode: '\x1B[33m');
+
+        if (backupFile.existsSync()) {
+          backupFile.renameSync(hookFile.path);
+          logInfo('[Git Hook] Restored original $hookType hook from backup.',
+              quiet, jsonMode,
+              colorCode: '\x1B[32m');
+        }
         return true;
       } catch (e) {
         logError('Failed to remove Git hook: ${e.toString()}', jsonMode);
+        return false;
+      }
+    } else if (backupFile.existsSync()) {
+      try {
+        backupFile.renameSync(hookFile.path);
+        logInfo('[Git Hook] Restored original $hookType hook from backup.',
+            quiet, jsonMode,
+            colorCode: '\x1B[32m');
+        return true;
+      } catch (e) {
+        logError('Failed to restore Git hook from backup: ${e.toString()}',
+            jsonMode);
         return false;
       }
     } else {

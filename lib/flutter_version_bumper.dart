@@ -215,6 +215,8 @@ int bumpVersion(List<String> arguments) {
       argResults.flag('changelog') || (config.changelog ?? false);
   final changelogMsg =
       argResults.option('changelog-msg') ?? config.changelogMsg;
+  final changelogPath =
+      argResults.option('changelog-path') ?? config.changelogPath;
 
   final noRollback = argResults.flag('no-rollback');
   final rollbackOnFailureFlag = argResults.flag('rollback-on-failure');
@@ -252,6 +254,13 @@ int bumpVersion(List<String> arguments) {
       argResults.wasParsed('no-build')) {
     logError(
         'Cannot use -n/--build-number together with --no-build.', jsonMode);
+    return ExitCode.usage.code;
+  }
+
+  if (argResults.wasParsed('keep-build') &&
+      argResults.wasParsed('build-number')) {
+    logError(
+        'Cannot use --keep-build together with -n/--build-number.', jsonMode);
     return ExitCode.usage.code;
   }
 
@@ -387,8 +396,7 @@ int bumpVersion(List<String> arguments) {
 
   // Resolve changelog path before transaction capture
   final resolvedChangelogPath = runChangelog
-      ? ChangelogUpdater.resolveChangelogPath(
-          pubspecFile.path, config.changelogPath)
+      ? ChangelogUpdater.resolveChangelogPath(pubspecFile.path, changelogPath)
       : null;
 
   // Initialize TransactionManager to ensure atomic release execution and rollback

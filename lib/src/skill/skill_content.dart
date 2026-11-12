@@ -121,6 +121,7 @@ Follow this reliable 4-step loop when executing version tasks:
   ```bash
   fvb -b minor -n 100
   ```
+  *(Note: `-n` / `--build-number` and `-k` / `--keep-build` are mutually exclusive; combining them exits with code 64).*
 * **Preserve Current Build Number**:
   ```bash
   fvb -b patch --keep-build
@@ -128,6 +129,12 @@ Follow this reliable 4-step loop when executing version tasks:
 * **Strip Build Number Segment Entirely**:
   ```bash
   fvb --no-build
+  ```
+* **Print FVB Version**:
+  ```bash
+  fvb --version
+  # Machine-readable JSON output:
+  fvb --version --json
   ```
 * **Quoted Version Compatibility**: FVB seamlessly supports unquoted, double-quoted (`"1.0.0+1"`), and single-quoted (`'1.0.0+1'`) versions in `pubspec.yaml`.
 
@@ -138,8 +145,10 @@ Follow this reliable 4-step loop when executing version tasks:
   ```
 * **Custom CHANGELOG Path**:
   ```bash
-  fvb -c --changelog-msg "Bug fixes" --path path/to/pubspec.yaml
+  fvb -c --changelog-path docs/CHANGELOG.md --changelog-msg "Bug fixes"
   ```
+* **Robust Header & Preamble Support**:
+  FVB safely detects `# Changelog` headers even if preceded by leading badges or comments, inserting release sections cleanly beneath Keep-a-Changelog preamble descriptions.
 
 ### 5. Git Release Automation
 * **Commit, Tag, and Push**:
@@ -163,6 +172,8 @@ Follow this reliable 4-step loop when executing version tasks:
   ```bash
   fvb -g --allow-dirty
   ```
+* **Non-Git Directory Resilience**:
+  When run in a non-git directory with `-g`, FVB warns and skips Git integrations gracefully without throwing fatal errors.
 
 ### 6. Git Hooks & Agent Skill Management
 * **Install Pre-Commit or Pre-Push Hook**: Automatically validates `pubspec.yaml` version before commits or pushes. Any existing hook is safely backed up to `<hook>.fvb-backup`:
@@ -171,11 +182,21 @@ Follow this reliable 4-step loop when executing version tasks:
   # or pre-push:
   fvb --install-hook pre-push
   ```
+* **Remove Git Hook & Restore Backup**: Deletes the installed hook and automatically restores the developer's original pre-existing hook from `<hook>.fvb-backup`:
+  ```bash
+  fvb --remove-hook pre-commit
+  ```
 * **Install Agent Skill into Repository**:
   ```bash
   fvb --install-skill
   # or target a specific project directory:
   fvb -p /path/to/project --install-skill
+  ```
+* **Remove Installed Agent Skill**:
+  ```bash
+  fvb --remove-skill
+  # or remove from global skills directory:
+  fvb --global --remove-skill
   ```
 
 ### 7. Transactional Safety & Rollback Support
@@ -196,6 +217,7 @@ Follow this reliable 4-step loop when executing version tasks:
   # or
   fvb --rollback
   ```
+  *FVB rollback is commit-safe: it only reverts Git commits if FVB itself created one and HEAD matches it, preserving developer commits, and ensures working tree and Git index remain clean without staged discrepancies.*
 
 ---
 
