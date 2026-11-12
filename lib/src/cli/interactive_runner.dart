@@ -84,7 +84,29 @@ PubspecVersion runInteractive(PubspecVersion current, bool keepBuild,
           continue;
         }
         try {
-          return PubspecVersion.parse(customStr);
+          final parsed = PubspecVersion.parse(customStr);
+          String? finalBuild;
+          if (removeBuild) {
+            finalBuild = null;
+          } else if (explicitBuild != null) {
+            finalBuild = explicitBuild.toString();
+          } else if (parsed.build != null) {
+            finalBuild = parsed.build;
+          } else if (keepBuild) {
+            finalBuild = current.build;
+          } else {
+            final int currentBuildInt = current.build != null
+                ? (int.tryParse(current.build!) ?? 0)
+                : 0;
+            finalBuild = (currentBuildInt + 1).toString();
+          }
+          return PubspecVersion(
+            major: parsed.major,
+            minor: parsed.minor,
+            patch: parsed.patch,
+            preRelease: parsed.preRelease,
+            build: finalBuild,
+          );
         } catch (e) {
           print('\x1B[31mError: ${e.toString()}\x1B[0m');
         }

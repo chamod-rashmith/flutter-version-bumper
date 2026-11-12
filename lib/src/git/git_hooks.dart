@@ -32,9 +32,9 @@ class GitHooksManager {
     }
 
     final hookFile = File(path.join(gitHooksDir.path, hookType));
-    const scriptContent = '''#!/bin/sh
+    final scriptContent = '''#!/bin/sh
 # FVB Git Hook - Validate pubspec.yaml version
-echo "🔍 Running Flutter Version Bumper pre-commit check..."
+echo "🔍 Running Flutter Version Bumper $hookType check..."
 if command -v fvb >/dev/null 2>&1; then
   fvb --dry-run --quiet
 elif [ -f "bin/fvb.dart" ]; then
@@ -46,13 +46,25 @@ else
   exit 0
 fi
 if [ \$? -ne 0 ]; then
-  echo "❌ FVB pre-commit check failed."
+  echo "❌ FVB $hookType check failed."
   exit 1
 fi
 echo "✅ FVB check passed."
 ''';
 
     try {
+      if (hookFile.existsSync()) {
+        final backupFile = File('${hookFile.path}.fvb-backup');
+        try {
+          hookFile.copySync(backupFile.path);
+          logInfo(
+              '[Git Hook] Existing $hookType backed up to ${backupFile.path}',
+              quiet,
+              jsonMode,
+              colorCode: '\x1B[33m');
+        } catch (_) {}
+      }
+
       hookFile.writeAsStringSync(scriptContent);
       // Make executable on POSIX systems
       if (!Platform.isWindows) {

@@ -35,12 +35,20 @@ class PubspecVersion {
   /// Throws a [FormatException] if [versionStr] does not contain at least
   /// three dot-separated integer segments (major, minor, and patch).
   static PubspecVersion parse(String versionStr) {
-    final cleaned = versionStr.trim();
+    var cleaned = versionStr.trim();
+
+    // Strip surrounding quotes if present (e.g. "1.0.0+1" or '1.0.0+1')
+    if ((cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+        (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+      if (cleaned.length >= 2) {
+        cleaned = cleaned.substring(1, cleaned.length - 1).trim();
+      }
+    }
 
     // Split by '+' to separate build number/metadata
     final mainParts = cleaned.split('+');
     final versionAndPre = mainParts[0];
-    final buildPart = mainParts.length > 1 ? mainParts[1] : null;
+    final buildPart = mainParts.length > 1 ? mainParts.sublist(1).join('+') : null;
 
     // Split by '-' to separate pre-release identifier
     final preParts = versionAndPre.split('-');
@@ -63,6 +71,11 @@ class PubspecVersion {
     if (major == null || minor == null || patch == null) {
       throw FormatException(
           'Invalid integer version segments in: "$versionStr".');
+    }
+
+    if (major < 0 || minor < 0 || patch < 0) {
+      throw FormatException(
+          'Version segments must be non-negative integers in: "$versionStr".');
     }
 
     return PubspecVersion(
@@ -114,16 +127,34 @@ class PubspecVersion {
               newMinor++;
               newPatch = 0;
               newPre = '$preReleaseLabel.1';
-            case _:
+            case 'patch':
+            case 'build':
               // Keep major, minor, patch same, bump pre-release suffix
               int existingNum = 0;
               if (parts.length > 1) {
                 existingNum = int.tryParse(parts[1]) ?? 0;
               }
               newPre = '$preReleaseLabel.${existingNum + 1}';
+            case _:
+              throw ArgumentError('Unknown bump type: "$bumpType".');
           }
         } else {
-          // Label changed (e.g. beta -> rc). Keep version same, start new pre-release sequence
+          // Label changed (e.g. beta -> rc).
+          // If a major or minor bump was explicitly requested, apply it.
+          switch (bumpType) {
+            case 'major':
+              newMajor++;
+              newMinor = 0;
+              newPatch = 0;
+            case 'minor':
+              newMinor++;
+              newPatch = 0;
+            case 'patch':
+            case 'build':
+              break;
+            case _:
+              throw ArgumentError('Unknown bump type: "$bumpType".');
+          }
           newPre = '$preReleaseLabel.1';
         }
       } else {

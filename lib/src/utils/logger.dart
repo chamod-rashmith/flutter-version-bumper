@@ -47,9 +47,10 @@ void printHelp(ArgParser parser) {
 /// If [quiet] is `true`, the message is suppressed. If [colorCode] is specified
 /// and [useAnsi] is `true`, colorizes the message before outputting.
 void logInfo(String msg, bool quiet, bool jsonMode, {String? colorCode}) {
+  if (quiet) return;
   if (jsonMode) {
     stderr.writeln(msg);
-  } else if (!quiet) {
+  } else {
     if (colorCode != null && useAnsi) {
       print('$colorCode$msg\x1B[0m');
     } else {
@@ -63,30 +64,23 @@ void logInfo(String msg, bool quiet, bool jsonMode, {String? colorCode}) {
 /// If [quiet] is `true` and [jsonMode] is `false`, the warning is suppressed.
 /// If [useAnsiErr] is `true`, colorizes the warning with yellow ANSI escape codes.
 void logWarning(String msg, bool quiet, bool jsonMode) {
-  if (jsonMode) {
+  if (quiet && !jsonMode) return;
+  if (useAnsiErr) {
     stderr.writeln('\x1B[33m[Warning] $msg\x1B[0m');
-  } else if (!quiet) {
-    if (useAnsiErr) {
-      stderr.writeln('\x1B[33m[Warning] $msg\x1B[0m');
-    } else {
-      stderr.writeln('[Warning] $msg');
-    }
+  } else {
+    stderr.writeln('[Warning] $msg');
   }
 }
 
 /// Outputs an error message to standard error.
 ///
-/// Always writes to [stderr]. If [useAnsiErr] is `true` and [jsonMode] is `false`,
-/// colorizes the error with red ANSI escape codes.
+/// Always writes to [stderr]. If [useAnsiErr] is `true`, colorizes the error
+/// with red ANSI escape codes.
 void logError(String msg, bool jsonMode) {
-  if (jsonMode) {
+  if (useAnsiErr) {
     stderr.writeln('\x1B[31mERROR: $msg\x1B[0m');
   } else {
-    if (useAnsiErr) {
-      stderr.writeln('\x1B[31mERROR: $msg\x1B[0m');
-    } else {
-      stderr.writeln('ERROR: $msg');
-    }
+    stderr.writeln('ERROR: $msg');
   }
 }
 

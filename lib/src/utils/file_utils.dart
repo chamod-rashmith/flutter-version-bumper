@@ -4,8 +4,9 @@ import 'package:path/path.dart' as path;
 /// The regular expression pattern used to locate the version line in `pubspec.yaml`.
 ///
 /// Matches `'version:'` at the start of a line, captures the version string up
-/// to the first whitespace or comment character (`#`).
-final RegExp versionRegex = RegExp(r'^version:\s*([^\s#]+)', multiLine: true);
+/// to the first whitespace, comment character (`#`), or surrounding quotes.
+final RegExp versionRegex =
+    RegExp(r'''^version:\s*['"]?([^\s#"']+)['"]?''', multiLine: true);
 
 /// Resolves the file reference to `pubspec.yaml`.
 ///
