@@ -1,12 +1,12 @@
 /// Embedded default SKILL.md content for Flutter Version Bumper.
 const String defaultSkillContent = '''---
 name: flutter-version-bumper
-description: Automates version management, Semantic Versioning (SemVer) bumping, CHANGELOG.md updating, and Git tagging/pushing for Flutter and Dart projects using the FVB CLI tool. Use when the user requests to bump or update versions in pubspec.yaml, manage pre-releases (alpha, beta, rc), promote pre-releases to stable, update CHANGELOG.md, configure git hooks, or automate git release commits and tags.
+description: Automates version management, Semantic Versioning (SemVer) bumping, transactional release safety & rollback, CHANGELOG.md updating, and Git tagging/pushing for Flutter and Dart projects using the FVB CLI tool. Use when the user requests to bump or update versions in pubspec.yaml, roll back releases (fvb rollback), manage pre-releases (alpha, beta, rc), promote pre-releases to stable, update CHANGELOG.md, configure git hooks, or automate git release commits and tags.
 ---
 
 # Flutter Version Bumper (FVB) Agent Skill
 
-A comprehensive runbook and procedural guide for AI Coding Agents to reliably manage versions, bump Semantic Versioning (SemVer) numbers, maintain release notes in `CHANGELOG.md`, and execute Git release automation in Flutter and Dart projects.
+A comprehensive runbook and procedural guide for AI Coding Agents to reliably manage versions, bump Semantic Versioning (SemVer) numbers, ensure transactional release safety and rollbacks, maintain release notes in `CHANGELOG.md`, and execute Git release automation in Flutter and Dart projects.
 
 ## Contents
 - [When to Activate This Skill](#when-to-activate-this-skill)
@@ -19,6 +19,7 @@ A comprehensive runbook and procedural guide for AI Coding Agents to reliably ma
   - [4. Automated CHANGELOG Maintenance](#4-automated-changelog-maintenance)
   - [5. Git Release Automation](#5-git-release-automation)
   - [6. Git Hooks & Agent Skill Management](#6-git-hooks--agent-skill-management)
+  - [7. Transactional Safety & Rollback Support](#7-transactional-safety--rollback-support)
 - [Machine-Readable JSON Output](#machine-readable-json-output)
 - [POSIX Exit Codes & Error Recovery](#posix-exit-codes--error-recovery)
 - [Configuration Reference (.fvb.yaml)](#configuration-reference-fvbyaml)
@@ -30,6 +31,7 @@ A comprehensive runbook and procedural guide for AI Coding Agents to reliably ma
 
 Activate this skill whenever:
 * The user asks to bump, increment, or set the version in a Flutter or Dart project's `pubspec.yaml`.
+* The user asks to undo, revert, or roll back a version bump (`fvb rollback`).
 * Managing releases: major (breaking), minor (features), patch (fixes), build-only, or pre-releases (`alpha`, `beta`, `rc`).
 * Promoting an existing pre-release to a stable production release (`--release` / `--promote`).
 * Adding structured release notes to `CHANGELOG.md`.
@@ -101,33 +103,27 @@ Follow this reliable 4-step loop when executing version tasks:
   ```bash
   fvb --pre beta
   ```
-* **Transition Pre-Release Track (e.g. Beta to RC)**: `1.0.1-beta.1+2` -> `1.0.1-rc.1+3`
+* **Switch Pre-Release Track**: `1.0.1-beta.2+3` -> `1.0.1-rc.1+4`
   ```bash
   fvb --pre rc
   ```
-* **Transition Pre-Release Track with Segment Bump (e.g. Beta to RC with Minor increment)**: `1.0.1-beta.1+2` -> `1.1.0-rc.1+3`
-  ```bash
-  fvb -b minor --pre rc
-  ```
-* **Promote Pre-Release to Stable Release**: `1.0.1-rc.1+3` -> `1.0.1+4`
+* **Promote Pre-Release to Stable Release**: `1.0.1-rc.1+4` -> `1.0.2+5`
   ```bash
   fvb --release
-  # or alias:
-  fvb --promote
   ```
 
 ### 3. Explicit Versions & Build Numbers
-* **Set Explicit Full Version**:
+* **Set Version Explicitly**:
   ```bash
-  fvb -s 2.0.0-beta.1+42
+  fvb -s 2.0.0-rc.1+10
   ```
-* **Explicit Build Number Override**:
+* **Set Explicit Build Number**:
   ```bash
-  fvb -n 100
+  fvb -b minor -n 100
   ```
-* **Preserve Current Build Number (no increment)**:
+* **Preserve Current Build Number**:
   ```bash
-  fvb --keep-build
+  fvb -b patch --keep-build
   ```
 * **Strip Build Number Segment Entirely**:
   ```bash
@@ -182,6 +178,25 @@ Follow this reliable 4-step loop when executing version tasks:
   fvb -p /path/to/project --install-skill
   ```
 
+### 7. Transactional Safety & Rollback Support
+* **Automatic Rollback on Failure** (Enabled by default):
+  If Git tagging, committing, or remote pushing fails, FVB automatically rolls back all filesystem modifications (`pubspec.yaml`, `CHANGELOG.md`) and cleans up any partially created Git commits or tags.
+  ```bash
+  fvb -b minor -g -t --git-push
+  ```
+* **Disable Auto-Rollback**:
+  To preserve modified files even if Git operations fail:
+  ```bash
+  fvb -b minor -g -t --no-rollback
+  ```
+* **Manual Rollback of Previous Bump**:
+  To undo the most recent local release/bump transaction:
+  ```bash
+  fvb rollback
+  # or
+  fvb --rollback
+  ```
+
 ---
 
 ## Machine-Readable JSON Output
@@ -220,7 +235,7 @@ FVB follows POSIX exit codes from `package:io` (`ExitCode`). Agents should inspe
 | **65** | `ExitCode.data` | Version string format error in `pubspec.yaml` or `-s`. Ensure versions conform to `X.Y.Z` or `X.Y.Z+W`. |
 | **74** | `ExitCode.ioError` | `pubspec.yaml` not found or filesystem permission error. Check `--path` argument. |
 | **78** | `ExitCode.config` | Malformed YAML in `.fvb.yaml` or `--config-path`. Fix YAML syntax. |
-| **70** | `ExitCode.software` | Unexpected internal runtime failure. Check stderr for stack trace. |
+| **70** | `ExitCode.software` | Unexpected internal runtime failure or Git operation failure. Check stderr for stack trace. |
 
 ---
 
@@ -237,6 +252,7 @@ fvb:
   git-tag: true             # Automatically create git tag
   git-push: false           # Automatically push to origin
   allow-dirty: false        # Allow committing with dirty working tree
+  rollback-on-failure: true # Automatically rollback if any stage fails
   commit-msg: "chore: bump version to {version}"
   tag-prefix: "v"           # Git tag prefix
   changelog: true           # Automatically update CHANGELOG.md
@@ -254,4 +270,6 @@ fvb:
    If Git aborts with a dirty working tree warning, inspect `git status` first rather than immediately passing `--allow-dirty`.
 3. **Parse Machine-Readable JSON**:
    Use `--json` and `-q` (`--quiet`) for silent, deterministic output parsing without ANSI escape codes.
+4. **Leverage Transactional Rollback**:
+   FVB automatically rolls back upon unexpected Git or filesystem errors. Use `fvb rollback` to undo an accidental local bump before pushing to remote.
 ''';

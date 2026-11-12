@@ -50,7 +50,8 @@ void main() {
 
     test('updates existing CHANGELOG.md with CRLF Windows line endings', () {
       final changelogFile = File(path.join(tempDir.path, 'CHANGELOG.md'));
-      changelogFile.writeAsStringSync('# Changelog\r\n\r\nInitial CRLF notes.\r\n');
+      changelogFile
+          .writeAsStringSync('# Changelog\r\n\r\nInitial CRLF notes.\r\n');
 
       final status = bumpVersion([
         '-p',
@@ -66,7 +67,8 @@ void main() {
       expect(content, contains('- CRLF release notes support'));
       expect(content, contains('Initial CRLF notes.'));
       // Verify section is placed before initial notes
-      expect(content.indexOf('## [1.0.1+2]'), lessThan(content.indexOf('Initial CRLF notes.')));
+      expect(content.indexOf('## [1.0.1+2]'),
+          lessThan(content.indexOf('Initial CRLF notes.')));
     });
 
     test('dry run does not modify CHANGELOG.md on disk', () {
@@ -141,7 +143,9 @@ fvb:
   });
 
   group('In-Memory Exit Code & Return Tests', () {
-    test('bumpVersion returns ExitCode.usage.code on unknown argument in-memory', () {
+    test(
+        'bumpVersion returns ExitCode.usage.code on unknown argument in-memory',
+        () {
       final code = bumpVersion(['--unknown-arg']);
       expect(code, equals(ExitCode.usage.code));
     });

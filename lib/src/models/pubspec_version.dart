@@ -48,7 +48,8 @@ class PubspecVersion {
     // Split by '+' to separate build number/metadata
     final mainParts = cleaned.split('+');
     final versionAndPre = mainParts[0];
-    final buildPart = mainParts.length > 1 ? mainParts.sublist(1).join('+') : null;
+    final buildPart =
+        mainParts.length > 1 ? mainParts.sublist(1).join('+') : null;
 
     // Split by '-' to separate pre-release identifier
     final preParts = versionAndPre.split('-');

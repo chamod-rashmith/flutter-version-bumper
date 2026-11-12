@@ -13,6 +13,7 @@
 In a standard Flutter development workflow, updating versions manually is error-prone. Developers often forget to increment the build number or accidentally break the YAML structure. **FVB** solves this by:
 
 - **Automating Build Numbers**: Every time you bump a version part (`major`, `minor`, or `patch`), the build number (the number after the `+`) is automatically incremented.
+- **Transactional Release & Rollback**: Automatic failure resilience. If network drops during `git push` or Git hooks reject a commit, FVB restores your files cleanly. Undo local bumps anytime with `fvb rollback`.
 - **Automating Changelogs**: Automatically appends clean release note headers to `CHANGELOG.md`.
 - **Project Configuration Files**: Save team defaults in `.fvb.yaml` or `pubspec.yaml` to avoid repeating long CLI flags.
 - **Git Hooks Automation**: Install pre-commit/pre-push hooks to enforce valid versioning workflows.
@@ -106,6 +107,17 @@ fvb --install-skill --global
 fvb --remove-skill
 ```
 
+#### 🔄 Transactional Safety & Rollback Engine
+FVB includes a built-in transaction manager that ensures release operations are strictly atomic:
+- **Automatic Rollback on Failure** (`--rollback-on-failure`): Enabled by default. If a release fails midway (e.g., pre-commit hooks reject changes, network timeout during `git push`, or invalid Git tags), FVB automatically reverts changes to `pubspec.yaml` and `CHANGELOG.md` in reverse order and cleans up created commits/tags.
+- **Disable Rollback**: Pass `--no-rollback` (or set `rollback_on_failure: false` in `.fvb.yaml`) if you want to keep modified files on disk even if Git operations fail.
+- **Manual Rollback** (`fvb rollback`): Undo the most recent local version bump transaction before pushing to remote:
+  ```bash
+  fvb rollback
+  # or
+  fvb --rollback
+  ```
+
 #### 🎮 Interactive Mode
 Run FVB in step-by-step interactive mode:
 ```bash
@@ -196,6 +208,9 @@ fvb --help
 - `-i, --interactive`: Launches a step-by-step interactive CLI interface.
 - `-q, --quiet`: Mutes console print statements.
 - `--json`: Formats output as a structured JSON string.
+- `--rollback`: Rolls back the most recent local version bump transaction.
+- `--[no-]rollback-on-failure`: Automatically roll back all changes if any stage of the release fails (default: on).
+- `--no-rollback`: Disables automatic rollback on failure.
 - `-h, --help`: Displays the help menu.
 
 ---
@@ -251,6 +266,8 @@ lib/
     ├── config/                    # YAML configuration parser (.fvb.yaml / pubspec.yaml)
     ├── git/                       # Git automation & Git hooks installer
     ├── models/                    # PubspecVersion SemVer model
+    ├── skill/                     # AI Agent skill manager
+    ├── transaction/               # Atomic transaction manager & rollback engine
     └── utils/                     # Logger & File utility helpers
 ```
 

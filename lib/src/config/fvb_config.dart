@@ -46,6 +46,9 @@ class FvbConfig {
   /// The custom entry message for `CHANGELOG.md` release notes.
   final String? changelogMsg;
 
+  /// Whether to automatically roll back changes if any stage of a release fails.
+  final bool? rollbackOnFailure;
+
   /// Creates an [FvbConfig] instance with the specified configuration options.
   FvbConfig({
     this.bump,
@@ -61,6 +64,7 @@ class FvbConfig {
     this.changelog,
     this.changelogPath,
     this.changelogMsg,
+    this.rollbackOnFailure,
   });
 
   /// Loads configuration from an explicit custom path, `.fvb.yaml`, or `pubspec.yaml`.
@@ -97,7 +101,8 @@ class FvbConfig {
           throw FormatException(
               'Failed to parse configuration file at "$configPath": ${e.toString()}');
         } else {
-          stderr.writeln('[Warning] Failed to parse .fvb.yaml: ${e.toString()}');
+          stderr
+              .writeln('[Warning] Failed to parse .fvb.yaml: ${e.toString()}');
         }
       }
     }
@@ -156,6 +161,14 @@ class FvbConfig {
       changelogMsg: map['changelog_msg'] as String? ??
           map['changelogMsg'] as String? ??
           map['changelog-msg'] as String?,
+      rollbackOnFailure: map['rollback_on_failure'] as bool? ??
+          map['rollbackOnFailure'] as bool? ??
+          map['rollback-on-failure'] as bool? ??
+          (map['no_rollback'] == true ||
+                  map['noRollback'] == true ||
+                  map['no-rollback'] == true
+              ? false
+              : null),
     );
   }
 }

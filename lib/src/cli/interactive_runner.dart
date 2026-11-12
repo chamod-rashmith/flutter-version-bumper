@@ -95,9 +95,8 @@ PubspecVersion runInteractive(PubspecVersion current, bool keepBuild,
           } else if (keepBuild) {
             finalBuild = current.build;
           } else {
-            final int currentBuildInt = current.build != null
-                ? (int.tryParse(current.build!) ?? 0)
-                : 0;
+            final int currentBuildInt =
+                current.build != null ? (int.tryParse(current.build!) ?? 0) : 0;
             finalBuild = (currentBuildInt + 1).toString();
           }
           return PubspecVersion(

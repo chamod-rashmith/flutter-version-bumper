@@ -5,7 +5,8 @@ import 'package:args/args.dart';
 /// Registers flags and options for SemVer bumping (`--bump`, `--set`, `--pre`,
 /// `--release`), build number manipulation (`--keep-build`, `--no-build`,
 /// `--build-number`), Git automation (`--git`, `--git-tag`, `--git-push`),
-/// changelog maintenance, and AI skill installation.
+/// changelog maintenance, transactional rollback (`--rollback-on-failure`,
+/// `--no-rollback`, `--rollback`), and AI skill installation.
 ArgParser buildArgParser() {
   return ArgParser()
     ..addOption('bump',
@@ -94,6 +95,15 @@ ArgParser buildArgParser() {
         help: 'Mute all console outputs (errors will still print)')
     ..addFlag('json',
         negatable: false, help: 'Format output as a structured JSON string')
+    ..addFlag('rollback',
+        negatable: false,
+        help: 'Roll back the most recent local version bump transaction')
+    ..addFlag('rollback-on-failure',
+        defaultsTo: true,
+        help:
+            'Automatically roll back all changes if any stage of the release fails')
+    ..addFlag('no-rollback',
+        negatable: false, help: 'Disable automatic rollback on failure')
     ..addFlag('help',
         abbr: 'h',
         negatable: false,

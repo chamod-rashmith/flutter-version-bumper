@@ -23,14 +23,14 @@ FVB follows [Semantic Versioning (SemVer)](https://semver.org/) and modern Dart 
 ### 🛡️ v1.7.0 — Safety, Rollback & Conventional Changelog *(Target: Next Minor)*
 > **Theme**: Reliability, failure resilience, and effortless changelog generation.
 
-#### 1. 🔄 Transactional Release & Rollback Support (`--rollback-on-failure`)
+#### 1. 🔄 Transactional Release & Rollback Support (`--rollback-on-failure`, `fvb rollback`) — ✅ **Completed**
 * **Problem**: If network drops during `git push`, or Git hooks reject a commit, or file writes fail midway, the repository is left in an inconsistent state (e.g., `pubspec.yaml` updated but Git commit failed).
-* **Feature**:
-  - Implement an atomic transaction manager.
-  - Automatically backup the pre-bump `pubspec.yaml`, `CHANGELOG.md`, and Git HEAD state in a temporary staging memory or cache.
-  - If any step fails (file write, changelog update, git commit, git tag, git push), automatically restore the previous state and clean up created tags or commits.
-  - Add `--rollback-on-failure` (enabled by default) and `--no-rollback` override.
-  - Add `fvb rollback` command to manually undo the most recent local bump if not yet pushed.
+* **Feature Delivered**:
+  - Implemented modular `TransactionManager`, `TransactionSnapshot`, and `RollbackStep`.
+  - Automatically captures pre-bump `pubspec.yaml`, `CHANGELOG.md`, and Git `HEAD` commit state.
+  - Automatically restores previous state and reverts created commits/tags in LIFO order upon any failure.
+  - Added `--rollback-on-failure` (enabled by default) and `--no-rollback` override.
+  - Added `fvb rollback` (and `--rollback`) command to manually undo the most recent local bump.
 
 #### 2. 📜 Automated Conventional Commits Changelog (`--auto-changelog`)
 * **Problem**: Developers currently need to pass `--changelog-msg "..."` manually.
