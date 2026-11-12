@@ -173,6 +173,14 @@ class SkillManager {
 
   /// Resolves the user's home directory across platform environments.
   static String? _getHomeDir() {
-    return Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
+    final env = Platform.environment;
+    final home = env['HOME'] ?? env['USERPROFILE'];
+    if (home != null && home.isNotEmpty) return home;
+
+    if (env['HOMEDRIVE'] != null && env['HOMEPATH'] != null) {
+      final drivePath = '${env['HOMEDRIVE']}${env['HOMEPATH']}';
+      if (drivePath.isNotEmpty) return drivePath;
+    }
+    return null;
   }
 }

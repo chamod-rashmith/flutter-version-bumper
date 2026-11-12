@@ -79,6 +79,10 @@ class ChangelogUpdater {
             '# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n';
       }
 
+      // Detect existing line endings to prevent mixed line endings on Windows
+      final nl = existingContent.contains('\r\n') ? '\r\n' : '\n';
+      final formattedSection = '$entryHeader$nl$nl- $entryMsg$nl$nl';
+
       // Case-insensitive check for '# Changelog' header and release sections.
       String updatedContent;
       final releaseSectionMatch =
@@ -90,7 +94,7 @@ class ChangelogUpdater {
         final insertIndex = releaseSectionMatch.start;
         final beforePart = existingContent.substring(0, insertIndex);
         final afterPart = existingContent.substring(insertIndex);
-        updatedContent = '$beforePart$newSection$afterPart';
+        updatedContent = '$beforePart$formattedSection$afterPart';
       } else {
         final changelogHeaderMatch = RegExp(r'^[ \t]*#\s+Changelog[^\r\n]*',
                 caseSensitive: false, multiLine: true)
@@ -114,19 +118,19 @@ class ChangelogUpdater {
                 (beforePart.endsWith('\n\n') || beforePart.endsWith('\r\n\r\n'))
                     ? ''
                     : (beforePart.endsWith('\r\n') ? '\r\n' : '\n');
-            updatedContent = '$beforePart$separator$newSection$restPart';
+            updatedContent = '$beforePart$separator$formattedSection$restPart';
           } else {
             final insertIndex = changelogHeaderMatch.end;
             final beforePart = existingContent.substring(0, insertIndex);
             final restPart = existingContent.substring(insertIndex);
-            updatedContent = '$beforePart\n\n$newSection$restPart';
+            updatedContent = '$beforePart$nl$nl$formattedSection$restPart';
           }
         } else {
           if (existingContent.trim().isEmpty) {
             updatedContent =
-                '# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n$newSection';
+                '# Changelog$nl${nl}All notable changes to this project will be documented in this file.$nl$nl$formattedSection';
           } else {
-            updatedContent = '$newSection$existingContent';
+            updatedContent = '$formattedSection$existingContent';
           }
         }
       }

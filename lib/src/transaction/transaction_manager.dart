@@ -46,12 +46,26 @@ class TransactionManager {
 
   /// Resolves the storage location for `.fvb_backup.json`.
   ///
-  /// Prefers `.git/fvb_backup.json` to keep working directory clean,
-  /// falling back to `.fvb_backup.json` in [projectDir] if `.git` does not exist.
+  /// Prefers `.git/fvb_backup.json` to keep working directory clean.
+  /// Supports Git worktrees and submodules where `.git` is a file pointing to `gitdir:`,
+  /// falling back to `.fvb_backup.json` in [projectDir] if no Git directory is found.
   static File resolveBackupFile(String projectDir) {
-    final gitDir = Directory(path.join(projectDir, '.git'));
-    if (gitDir.existsSync()) {
-      return File(path.join(gitDir.path, 'fvb_backup.json'));
+    final dotGit = path.join(projectDir, '.git');
+    if (Directory(dotGit).existsSync()) {
+      return File(path.join(dotGit, 'fvb_backup.json'));
+    } else if (File(dotGit).existsSync()) {
+      try {
+        final content = File(dotGit).readAsStringSync().trim();
+        if (content.startsWith('gitdir:')) {
+          final realGitDir = content.substring('gitdir:'.length).trim();
+          final resolvedGitDir = path.isAbsolute(realGitDir)
+              ? realGitDir
+              : path.canonicalize(path.join(projectDir, realGitDir));
+          if (Directory(resolvedGitDir).existsSync()) {
+            return File(path.join(resolvedGitDir, 'fvb_backup.json'));
+          }
+        }
+      } catch (_) {}
     }
     return File(path.join(projectDir, '.fvb_backup.json'));
   }

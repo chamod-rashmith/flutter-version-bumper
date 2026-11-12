@@ -76,7 +76,8 @@ Map<String, bool> runGitAutomation({
   final filesToAdd = <String>[path.basename(pubspecPath)];
   if (changelogPath != null) {
     final relativeChangelog = path.relative(changelogPath, from: dir);
-    filesToAdd.add(relativeChangelog);
+    // Normalize backslashes to forward slashes for Git pathspec compatibility on Windows
+    filesToAdd.add(relativeChangelog.replaceAll(r'\', '/'));
   }
 
   if (dryRun) {

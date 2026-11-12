@@ -7,23 +7,44 @@ class GitHooksManager {
   /// Creates a [GitHooksManager] instance.
   const GitHooksManager();
 
+  /// Resolves the Git hooks directory across normal repositories, worktrees, and submodules.
+  static Directory _resolveHooksDirectory(String projectDir) {
+    try {
+      final res = Process.runSync('git', ['rev-parse', '--git-path', 'hooks'],
+          workingDirectory: projectDir);
+      if (res.exitCode == 0) {
+        final p = (res.stdout as String).trim();
+        if (p.isNotEmpty) {
+          final resolved = path.isAbsolute(p)
+              ? p
+              : path.canonicalize(path.join(projectDir, p));
+          return Directory(resolved);
+        }
+      }
+    } catch (_) {}
+    return Directory(path.join(projectDir, '.git', 'hooks'));
+  }
+
   /// Installs an executable Git pre-commit or pre-push hook.
   ///
-  /// Installs the hook script into the `.git/hooks/` directory located inside [projectDir].
+  /// Installs the hook script into the Git hooks directory for [projectDir].
   /// The [hookType] defaults to `'pre-commit'`, but also supports `'pre-push'`.
+  ///
+  /// Automatically normalizes the script to Unix line endings (`\n`) to prevent
+  /// shebang interpreter errors on Windows (`/bin/sh^M: bad interpreter`).
   ///
   /// If [quiet] is `true`, suppresses success notifications.
   /// If [jsonMode] is `true`, routes informational messages to standard error.
   ///
   /// Returns `true` if the hook was successfully written and marked executable;
-  /// returns `false` if the `.git/hooks/` directory is missing or inaccessible.
+  /// returns `false` if the hooks directory is missing or inaccessible.
   static bool installHook({
     required String projectDir,
     String hookType = 'pre-commit',
     required bool quiet,
     required bool jsonMode,
   }) {
-    final gitHooksDir = Directory(path.join(projectDir, '.git', 'hooks'));
+    final gitHooksDir = _resolveHooksDirectory(projectDir);
     if (!gitHooksDir.existsSync()) {
       logError(
           'Git repository hooks directory not found at ${gitHooksDir.path}. Make sure git is initialized.',
@@ -34,6 +55,7 @@ class GitHooksManager {
     final hookFile = File(path.join(gitHooksDir.path, hookType));
     final scriptContent = '''#!/bin/sh
 # FVB Git Hook - Validate pubspec.yaml version
+export PATH="/opt/homebrew/bin:/usr/local/bin:\$HOME/.pub-cache/bin:\$PATH"
 echo "🔍 Running Flutter Version Bumper $hookType check..."
 if command -v fvb >/dev/null 2>&1; then
   fvb --dry-run --quiet
@@ -65,7 +87,9 @@ echo "✅ FVB check passed."
         } catch (_) {}
       }
 
-      hookFile.writeAsStringSync(scriptContent);
+      // Always normalize to Unix LF to prevent shebang issues on Windows MSYS2
+      final normalizedScript = scriptContent.replaceAll('\r\n', '\n');
+      hookFile.writeAsStringSync(normalizedScript);
       // Make executable on POSIX systems
       if (!Platform.isWindows) {
         Process.runSync('chmod', ['+x', hookFile.path]);
@@ -82,7 +106,7 @@ echo "✅ FVB check passed."
 
   /// Removes an installed Git hook from the project.
   ///
-  /// Locates and deletes the hook file matching [hookType] from `.git/hooks/`
+  /// Locates and deletes the hook file matching [hookType] from the hooks directory
   /// inside [projectDir]. If a previously backed up hook (`<hookType>.fvb-backup`)
   /// exists, restores it to the original hook path.
   ///
@@ -94,7 +118,8 @@ echo "✅ FVB check passed."
     required bool quiet,
     required bool jsonMode,
   }) {
-    final hookFile = File(path.join(projectDir, '.git', 'hooks', hookType));
+    final gitHooksDir = _resolveHooksDirectory(projectDir);
+    final hookFile = File(path.join(gitHooksDir.path, hookType));
     final backupFile = File('${hookFile.path}.fvb-backup');
 
     if (hookFile.existsSync()) {
