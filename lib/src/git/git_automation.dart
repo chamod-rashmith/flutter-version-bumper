@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as path;
+import '../transaction/transaction_manager.dart';
 import '../utils/logger.dart';
 
 /// Executes Git operations for committing, tagging, and pushing version changes.
@@ -10,12 +11,15 @@ import '../utils/logger.dart';
 /// If [doTag] is `true`, creates an annotated Git tag with [tagPrefix] prepended to [version].
 /// If [doPush] is `true`, pushes the current branch (`HEAD`) and tags to remote origin.
 ///
+/// If [transactionManager] is provided, newly created commits and tags are registered
+/// as compensating rollback steps to support atomic release rollback.
+///
 /// If [allowDirty] is `false`, aborts Git operations if uncommitted changes exist
 /// in the working directory outside of the versioned files.
 /// If [dryRun] is `true`, simulates Git commands without mutating the repository.
 ///
 /// Returns a map indicating execution status:
-/// `{'committed': bool, 'tagged': bool, 'pushed': bool}`.
+/// `{'committed': bool, 'tagged': bool, 'pushed': bool, 'success': bool}`.
 Map<String, bool> runGitAutomation({
   required String pubspecPath,
   required String version,
@@ -25,6 +29,7 @@ Map<String, bool> runGitAutomation({
   required String commitMsgTemplate,
   required String tagPrefix,
   String? changelogPath,
+  TransactionManager? transactionManager,
   bool allowDirty = false,
   required bool dryRun,
   required bool quiet,
@@ -34,7 +39,12 @@ Map<String, bool> runGitAutomation({
   if (!isGitRepository(dir)) {
     logWarning(
         'Not a Git repository. Skipping Git integrations.', quiet, jsonMode);
-    return {'committed': false, 'tagged': false, 'pushed': false};
+    return {
+      'committed': false,
+      'tagged': false,
+      'pushed': false,
+      'success': false
+    };
   }
 
   if (!allowDirty) {
@@ -88,30 +98,74 @@ Map<String, bool> runGitAutomation({
             colorCode: '\x1B[33m');
       }
     }
-    return {'committed': doCommit, 'tagged': doTag, 'pushed': doPush};
+    return {
+      'committed': doCommit,
+      'tagged': doTag,
+      'pushed': doPush,
+      'success': true,
+    };
   }
 
   bool committed = false;
   bool tagged = false;
   bool pushed = false;
+  bool tagFailed = false;
+  bool pushFailed = false;
 
   if (doCommit) {
     final addRes =
         Process.runSync('git', ['add', ...filesToAdd], workingDirectory: dir);
     if (addRes.exitCode != 0) {
       logWarning('git add failed: ${addRes.stderr}', quiet, jsonMode);
-      return {'committed': false, 'tagged': false, 'pushed': false};
+      return {
+        'committed': false,
+        'tagged': false,
+        'pushed': false,
+        'success': false,
+      };
     }
 
     final commitRes = Process.runSync('git', ['commit', '-m', commitMsg],
         workingDirectory: dir);
     if (commitRes.exitCode != 0) {
       logWarning('git commit failed: ${commitRes.stderr}', quiet, jsonMode);
-      return {'committed': false, 'tagged': false, 'pushed': false};
+      return {
+        'committed': false,
+        'tagged': false,
+        'pushed': false,
+        'success': false,
+      };
     }
     committed = true;
     logInfo('[Git] Committed change: "$commitMsg"', quiet, jsonMode,
         colorCode: '\x1B[32m');
+
+    if (transactionManager != null) {
+      final initialHead = transactionManager.snapshot?.initialGitHead;
+      String? createdSha;
+      try {
+        final shaRes = Process.runSync('git', ['rev-parse', 'HEAD'],
+            workingDirectory: dir);
+        if (shaRes.exitCode == 0) {
+          createdSha = (shaRes.stdout as String).trim();
+          transactionManager.recordGitCommit(createdSha);
+        }
+      } catch (_) {}
+
+      transactionManager.registerRollbackStep(
+        description:
+            'Soft reset Git commit ($createdSha) to ${initialHead ?? "HEAD~1"}',
+        action: () {
+          if (initialHead != null) {
+            Process.runSync('git', ['reset', '--soft', initialHead],
+                workingDirectory: dir);
+          } else {
+            Process.runSync('git', ['reset', '--soft', 'HEAD~1'],
+                workingDirectory: dir);
+          }
+        },
+      );
+    }
   }
 
   if (doTag) {
@@ -119,11 +173,23 @@ Map<String, bool> runGitAutomation({
         'git', ['tag', '-a', tagName, '-m', 'Release $version'],
         workingDirectory: dir);
     if (tagRes.exitCode != 0) {
+      tagFailed = true;
       logWarning('git tag failed: ${tagRes.stderr}', quiet, jsonMode);
     } else {
       tagged = true;
       logInfo('[Git] Created tag: $tagName', quiet, jsonMode,
           colorCode: '\x1B[32m');
+
+      if (transactionManager != null) {
+        transactionManager.recordGitTag(tagName);
+        transactionManager.registerRollbackStep(
+          description: 'Delete created Git tag "$tagName"',
+          action: () {
+            Process.runSync('git', ['tag', '-d', tagName],
+                workingDirectory: dir);
+          },
+        );
+      }
     }
   }
 
@@ -133,6 +199,7 @@ Map<String, bool> runGitAutomation({
     final pushRes = Process.runSync('git', ['push', 'origin', 'HEAD'],
         workingDirectory: dir);
     if (pushRes.exitCode != 0) {
+      pushFailed = true;
       logWarning(
           'git push origin HEAD failed: ${pushRes.stderr}', quiet, jsonMode);
     } else {
@@ -141,10 +208,11 @@ Map<String, bool> runGitAutomation({
           colorCode: '\x1B[32m');
     }
 
-    if (doTag && tagged) {
+    if (doTag && tagged && !pushFailed) {
       final pushTagRes = Process.runSync('git', ['push', 'origin', tagName],
           workingDirectory: dir);
       if (pushTagRes.exitCode != 0) {
+        pushFailed = true;
         logWarning('git push origin $tagName failed: ${pushTagRes.stderr}',
             quiet, jsonMode);
       } else {
@@ -154,7 +222,16 @@ Map<String, bool> runGitAutomation({
     }
   }
 
-  return {'committed': committed, 'tagged': tagged, 'pushed': pushed};
+  final success = (!doCommit || committed) &&
+      (!doTag || (tagged && !tagFailed)) &&
+      (!doPush || (pushed && !pushFailed));
+
+  return {
+    'committed': committed,
+    'tagged': tagged,
+    'pushed': pushed,
+    'success': success,
+  };
 }
 
 /// Checks whether the specified [workingDirectory] is inside a Git repository.

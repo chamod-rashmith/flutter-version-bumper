@@ -19,6 +19,7 @@ import 'src/git/git_automation.dart';
 import 'src/git/git_hooks.dart';
 import 'src/models/pubspec_version.dart';
 import 'src/skill/skill_manager.dart';
+import 'src/transaction/transaction_manager.dart';
 import 'src/utils/file_utils.dart';
 import 'src/utils/logger.dart';
 
@@ -28,6 +29,9 @@ export 'src/config/fvb_config.dart';
 export 'src/git/git_hooks.dart';
 export 'src/models/pubspec_version.dart';
 export 'src/skill/skill_manager.dart';
+export 'src/transaction/rollback_step.dart';
+export 'src/transaction/transaction_manager.dart';
+export 'src/transaction/transaction_snapshot.dart';
 export 'src/utils/file_utils.dart' show versionRegex;
 
 /// Processes command-line arguments and performs the version bump.
@@ -45,8 +49,13 @@ export 'src/utils/file_utils.dart' show versionRegex;
 int bumpVersion(List<String> arguments) {
   final parser = buildArgParser();
 
+  // Support `fvb rollback` subcommand directly
+  final isRollbackCmd = arguments.isNotEmpty && arguments.first == 'rollback';
   final processedArgs = <String>[];
-  for (var i = 0; i < arguments.length; i++) {
+  if (isRollbackCmd) {
+    processedArgs.add('--rollback');
+  }
+  for (var i = (isRollbackCmd ? 1 : 0); i < arguments.length; i++) {
     final arg = arguments[i];
     if (arg == '--install-hook') {
       processedArgs.add(arg);
@@ -88,6 +97,18 @@ int bumpVersion(List<String> arguments) {
     if (customPath == null) return Directory.current.path;
     final abs = path.canonicalize(path.absolute(customPath));
     return FileSystemEntity.isDirectorySync(abs) ? abs : path.dirname(abs);
+  }
+
+  // Handle manual rollback if requested via `fvb rollback` or `fvb --rollback`
+  final rollbackRequested = isRollbackCmd || argResults.flag('rollback');
+  if (rollbackRequested) {
+    final targetDir = resolveTargetDirectory(customPath);
+    final ok = TransactionManager.performManualRollback(
+      projectDir: targetDir,
+      quiet: quiet,
+      jsonMode: jsonMode,
+    );
+    return ok ? ExitCode.success.code : ExitCode.software.code;
   }
 
   // Handle Agent Skill command flags if specified
@@ -163,12 +184,10 @@ int bumpVersion(List<String> arguments) {
 
   final keepBuild =
       argResults.flag('keep-build') || (config.keepBuild ?? false);
-  final removeBuild =
-      argResults.flag('no-build') || (config.noBuild ?? false);
+  final removeBuild = argResults.flag('no-build') || (config.noBuild ?? false);
   final runGit = argResults.flag('git') || (config.git ?? false);
   final runGitTag = argResults.flag('git-tag') || (config.gitTag ?? false);
-  final runGitPush =
-      argResults.flag('git-push') || (config.gitPush ?? false);
+  final runGitPush = argResults.flag('git-push') || (config.gitPush ?? false);
   final allowDirty =
       argResults.flag('allow-dirty') || (config.allowDirty ?? false);
 
@@ -179,13 +198,19 @@ int bumpVersion(List<String> arguments) {
   final commitMsg = argResults.option('commit-msg') ??
       config.commitMsg ??
       'chore: bump version to {version}';
-  final tagPrefix =
-      argResults.option('tag-prefix') ?? config.tagPrefix ?? 'v';
+  final tagPrefix = argResults.option('tag-prefix') ?? config.tagPrefix ?? 'v';
 
   final runChangelog =
       argResults.flag('changelog') || (config.changelog ?? false);
   final changelogMsg =
       argResults.option('changelog-msg') ?? config.changelogMsg;
+
+  final noRollback = argResults.flag('no-rollback');
+  final rollbackOnFailureFlag = argResults.flag('rollback-on-failure');
+  final rollbackOnFailure = !noRollback &&
+      (argResults.wasParsed('rollback-on-failure')
+          ? rollbackOnFailureFlag
+          : (config.rollbackOnFailure ?? true));
 
   final interactive = argResults.flag('interactive');
   final preReleaseLabel = argResults.option('pre');
@@ -349,6 +374,31 @@ int bumpVersion(List<String> arguments) {
   logInfo('New version:     $newFullStr', quiet, jsonMode,
       colorCode: '\x1B[32m');
 
+  // Resolve changelog path before transaction capture
+  final resolvedChangelogPath = runChangelog
+      ? ChangelogUpdater.resolveChangelogPath(
+          pubspecFile.path, config.changelogPath)
+      : null;
+
+  // Initialize TransactionManager to ensure atomic release execution and rollback
+  final projectDir = path.dirname(pubspecFile.path);
+  final transactionManager = TransactionManager(
+    projectDir: projectDir,
+    rollbackOnFailure: rollbackOnFailure,
+    quiet: quiet,
+    jsonMode: jsonMode,
+  );
+
+  if (!dryRun) {
+    transactionManager.captureInitialState(
+      previousVersion: currentVersion.toString(),
+      newVersion: newFullStr,
+      pubspecFile: pubspecFile,
+      originalPubspecContent: content,
+      changelogPath: resolvedChangelogPath,
+    );
+  }
+
   // Replace old version in content and write back if not a dry-run
   final newContent = content.replaceFirst(versionRegex, 'version: $newFullStr');
 
@@ -358,8 +408,21 @@ int bumpVersion(List<String> arguments) {
     } catch (e) {
       logError(
           'Failed to write changes to pubspec.yaml: ${e.toString()}', jsonMode);
+      if (transactionManager.rollbackOnFailure) {
+        transactionManager.rollback();
+      }
       return ExitCode.ioError.code;
     }
+
+    transactionManager.registerRollbackStep(
+      description: 'Restore pubspec.yaml to previous version ($currentVersion)',
+      action: () {
+        try {
+          pubspecFile.writeAsStringSync(content);
+        } catch (_) {}
+      },
+    );
+
     logInfo('\n[OK] pubspec.yaml updated: $currentVersion -> $newFullStr',
         quiet, jsonMode,
         colorCode: '\x1B[33m');
@@ -373,11 +436,6 @@ int bumpVersion(List<String> arguments) {
 
   // Handle CHANGELOG.md update if enabled
   bool changelogUpdated = false;
-  final resolvedChangelogPath = runChangelog
-      ? ChangelogUpdater.resolveChangelogPath(
-          pubspecFile.path, config.changelogPath)
-      : null;
-
   if (runChangelog && resolvedChangelogPath != null) {
     changelogUpdated = ChangelogUpdater.updateChangelog(
       pubspecPath: pubspecFile.path,
@@ -388,6 +446,33 @@ int bumpVersion(List<String> arguments) {
       quiet: quiet,
       jsonMode: jsonMode,
     );
+
+    if (!dryRun) {
+      if (changelogUpdated) {
+        final originalChangelog =
+            transactionManager.snapshot?.originalChangelogContent;
+        final changelogExisted =
+            transactionManager.snapshot?.changelogExisted ?? false;
+        final changelogFile = File(resolvedChangelogPath);
+
+        transactionManager.registerRollbackStep(
+          description: 'Restore CHANGELOG.md',
+          action: () {
+            try {
+              if (changelogExisted && originalChangelog != null) {
+                changelogFile.writeAsStringSync(originalChangelog);
+              } else if (!changelogExisted && changelogFile.existsSync()) {
+                changelogFile.deleteSync();
+              }
+            } catch (_) {}
+          },
+        );
+      } else if (transactionManager.rollbackOnFailure) {
+        logError('Failed to update CHANGELOG.md during release.', jsonMode);
+        transactionManager.rollback();
+        return ExitCode.ioError.code;
+      }
+    }
   }
 
   // Handle Git integration
@@ -406,6 +491,7 @@ int bumpVersion(List<String> arguments) {
       commitMsgTemplate: commitMsg,
       tagPrefix: tagPrefix,
       changelogPath: resolvedChangelogPath,
+      transactionManager: dryRun ? null : transactionManager,
       allowDirty: allowDirty,
       dryRun: dryRun,
       quiet: quiet,
@@ -414,6 +500,25 @@ int bumpVersion(List<String> arguments) {
     gitCommitted = result['committed'] ?? false;
     gitTagged = result['tagged'] ?? false;
     gitPushed = result['pushed'] ?? false;
+    final gitSuccess = result['success'] ?? true;
+
+    if (!dryRun && !gitSuccess) {
+      if (transactionManager.rollbackOnFailure) {
+        transactionManager.rollback();
+      }
+      return ExitCode.software.code;
+    }
+  }
+
+  // Manage transaction backup lifecycle
+  if (!dryRun) {
+    if (runGitPush && gitPushed) {
+      // Remote push succeeded: remove local backup snapshot
+      transactionManager.clearBackup();
+    } else {
+      // Local changes made (or commit/tag created locally): persist backup for manual rollback
+      transactionManager.persistBackup();
+    }
   }
 
   if (jsonMode) {
