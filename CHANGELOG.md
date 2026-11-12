@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.7.0] - 2026-11-12
+
+### Added
+- **Transactional Release & Rollback Engine**:
+  - Introduced `TransactionManager`, `TransactionSnapshot`, and `RollbackStep` to guarantee atomic releases across filesystem mutations and Git operations.
+  - Automatically snapshots pre-bump state (`pubspec.yaml`, `CHANGELOG.md`, Git HEAD) and performs automatic rollback on failure (`--rollback-on-failure`).
+  - Added manual rollback support via `fvb rollback` (or `fvb --rollback`) to cleanly revert the most recent local version bump.
+  - Added `--no-rollback` override flag and `rollback_on_failure` configuration key in `.fvb.yaml`.
+- **Cross-Platform Git Hooks & Hardening**:
+  - Added pre-push Git hook support via `--install-hook pre-push`.
+  - Added automatic restoration of developer hooks (`.fvb-backup`) when using `--remove-hook`.
+  - Normalized hook script shebangs to Unix LF (`\n`) to prevent `/bin/sh^M: bad interpreter` errors on Windows MSYS2.
+  - Added automated PATH export for Homebrew (`/opt/homebrew/bin`, `/usr/local/bin`) and pub cache in Git hook scripts, ensuring hooks execute reliably in macOS GUI Git clients (VS Code, Xcode, GitHub Desktop).
+  - Added Git worktree and submodule support where `.git` is a file with `gitdir: <path>`.
+- **CLI Flags & Enhancements**:
+  - Added `--changelog-path` CLI option for configuring custom `CHANGELOG.md` file paths.
+  - Added `--version` flag (with `--json` support) for programmatic version querying.
+  - Added mutual exclusivity validation between `--keep-build` (`-k`) and `-n/--build-number`.
+
+### Fixed
+- **Commit-Safe Manual Rollback**: Only resets Git HEAD if FVB created a release commit during that transaction and HEAD matches it, strictly preserving subsequent developer commits.
+- **Clean Git Index on Rollback**: Uses mixed reset and explicit unstaging to eliminate staged `MM` discrepancies after rolling back.
+- **Non-Git Directory Resilience**: Gracefully warns and skips Git operations without triggering fatal software error rollbacks when executed in non-git directories.
+- **Windows Git Pathspec Normalization**: Normalized relative changelog paths to forward slashes (`/`) for Git CLI compatibility on Windows.
+- **Windows Home Directory Fallback**: Added `HOMEDRIVE` + `HOMEPATH` fallback in `SkillManager` when `USERPROFILE` is unset in headless Windows environments.
+- **Leading Badges & Preamble Preservation in Changelog**: Preserves leading badges and comments before `# Changelog` and keeps Keep-a-Changelog preamble descriptions above release headers.
+
 ## [1.6.0] - 2026-10-21
 
 ### Fixed

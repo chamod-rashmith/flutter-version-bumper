@@ -10,8 +10,7 @@ FVB follows [Semantic Versioning (SemVer)](https://semver.org/) and modern Dart 
 
 | Milestone | Target Version | Focus Area | Status |
 | :--- | :--- | :--- | :--- |
-| **Current Stable** | `v1.6.0` | POSIX Exit Codes, Dart 3 Patterns, Windows CRLF, Agent Skills | ✅ **Shipped** |
-| **Milestone 1** | `v1.7.0` | Transaction Safety, Rollback Support & Conventional Changelog | 🚧 **Next Up** |
+| **Current Stable** | `v1.7.0` | Transaction Safety, Rollback Support, Cross-Platform Hardening | ✅ **Shipped** |
 | **Milestone 2** | `v1.8.0` | CI/CD Audit Gate (`fvb verify`), Branch Policies & GPG Signing | 📋 **Planned** |
 | **Milestone 3** | `v1.9.0` | Terminal UI (TUI) Enhancements & GitHub/GitLab Releases | 💡 **Proposed** |
 | **Major Milestone**| `v2.0.0` | Monorepo / Melos Workspace Support & Extensible Plugins | 🔮 **Future Horizon** |
